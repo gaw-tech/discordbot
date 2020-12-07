@@ -126,67 +126,46 @@ public class ButtonCommand {
 		}
 
 		if (content.equals(this.prefix + "bs")) {
-			this.player = null;
-			try {
-				Reader reader = Files.newBufferedReader(Paths.get("buttonscores.json"));
-				JsonObject parser = (JsonObject) Jsoner.deserialize(reader);
-				JsonArray users = (JsonArray) parser.get("users");
-
-				users.forEach(entry -> {
-					JsonObject player = (JsonObject) entry;
-					if (((BigDecimal) player.get("id")).longValue() == event.getAuthor().getIdLong()) {
-						this.player = player;
-					}
-				});
-				if (this.player == null) {
-					channel.sendMessage("You have no score.").queue();
-				} else {
-					channel.sendMessage(
-							event.getAuthor().getAsMention() + ", you have " + this.player.get("bgscore") + " points.")
-							.queue();
+			BgscoreUser[] toplist = printBest();
+			boolean founduser = false;
+			int rank = 0;
+			for(int i = 0; i < toplist.length;i++) {
+				if(toplist[i].id == event.getAuthor().getIdLong()) {
+					founduser =true;
+					rank = i+1;
+					break;
 				}
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				System.out.println("bs commands reader");
-				e.printStackTrace();
-			} catch (JsonException e) {
-				// TODO Auto-generated catch block
-				System.out.println("bs commands parser or something");
-				e.printStackTrace();
+			}
+
+			if (!founduser) {
+				channel.sendMessage("You have no score.").queue();
+			} else {
+				channel.sendMessage(
+						event.getAuthor().getAsMention() + ", you have " + toplist[rank-1].bgscore + " points. You are nr. " + rank)
+						.queue();
 			}
 		}
 
 		// check for a score
 		if (content.startsWith(this.prefix + "bs ")) {
-			this.player = null;
+			BgscoreUser[] toplist = printBest();
 			List<Member> mentions = event.getMessage().getMentionedMembers();
-			try {
-				Reader reader = Files.newBufferedReader(Paths.get("buttonscores.json"));
-				JsonObject parser = (JsonObject) Jsoner.deserialize(reader);
-				JsonArray users = (JsonArray) parser.get("users");
-
-				users.forEach(entry -> {
-					JsonObject player = (JsonObject) entry;
-					if (((BigDecimal) player.get("id")).longValue() == mentions.get(0).getIdLong()) {
-						this.player = player;
-					}
-				});
-
-				if (this.player == null) {
-					channel.sendMessage(mentions.get(0).getAsMention() + " has no score.").queue();
-				} else {
-					channel.sendMessage(
-							mentions.get(0).getAsMention() + ", has " + this.player.get("bgscore") + " points.")
-							.queue();
+			boolean founduser = false;
+			int rank = 0;
+			for(int i = 0; i < toplist.length;i++) {
+				if(toplist[i].id == mentions.get(0).getIdLong()) {
+					founduser =true;
+					rank = i+1;
+					break;
 				}
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				System.out.println("bs commands reader");
-				e.printStackTrace();
-			} catch (JsonException e) {
-				// TODO Auto-generated catch block
-				System.out.println("bs commands parser or something");
-				e.printStackTrace();
+			}
+			
+			if (!founduser) {
+				channel.sendMessage(mentions.get(0).getAsMention() + " has no score.").queue();
+			} else {
+				channel.sendMessage(
+						mentions.get(0).getAsMention() + ", has " + toplist[rank-1].bgscore + " points and is nr. " + rank)
+						.queue();
 			}
 		}
 	}
