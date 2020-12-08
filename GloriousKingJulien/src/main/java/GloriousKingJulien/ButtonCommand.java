@@ -88,10 +88,9 @@ public class ButtonCommand {
 				scores = scores + toplist[i].bgscore + "\n";
 				rank = rank + "**" + (i + 1) + ".**\n";
 			}
-			eb.addField("", "", false);
-			eb.addField("", rank, true);
-			eb.addField("Player: ", users, true);
-			eb.addField("Score: ", scores, true);
+			eb.addField("", "**Rank:**\n" + rank, true);
+			eb.addField("", "**Player:** \n" +users, true);
+			eb.addField("", "**Score:** \n" + scores, true);
 			nickname = (event.getMember().getNickname() != null) ? event.getMember().getNickname()
 					: event.getMember().getEffectiveName();
 			eb.setFooter("Summoned by: " + nickname, event.getAuthor().getAvatarUrl());
