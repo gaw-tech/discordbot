@@ -57,6 +57,10 @@ public class Commands extends ListenerAdapter {
 		if (event.getAuthor().getAsTag().equals(myID)) {
 			statusbar.run(event, jda);
 			otherCommands.run(event, jda);
+			
+			if(event.getMessage().getContentRaw().equals("?stop")) {
+				otherCommands.spamming = false;
+			}
 		}
 	}
 

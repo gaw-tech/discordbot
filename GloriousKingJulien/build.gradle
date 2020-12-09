@@ -60,7 +60,7 @@ dependencies {
 
 shadowJar {
    archiveBaseName.set('KingJulien')
-   archiveVersion.set('0.3.2')
+   archiveVersion.set('0.3.3')
 }
 
 apply plugin: 'java'
