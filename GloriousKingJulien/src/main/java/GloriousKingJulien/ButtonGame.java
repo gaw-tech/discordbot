@@ -7,7 +7,7 @@ public class ButtonGame {
 	private long value = 10;
 	private boolean started = false;
 	long msgId;
-	long channelId;
+	long channelId = 0;
 
 	public void run(JDA jda) {
 

@@ -51,11 +51,14 @@ public class ButtonCommand {
 			int value = Integer.parseInt(content.replaceAll("[\\D]", ""));
 			bgame.setValue(value);
 		}
-		
+
 		if (content.equals(this.prefix + "button") || content.equals(this.prefix + "b")) {
 			event.getMessage().delete().queue();
 			channelId = channel.getIdLong();
-			channel.deleteMessageById(messageId).queue();
+			if (bgame.channelId != 0) {
+				MessageChannel oldchannel = event.getGuild().getTextChannelById(bgame.channelId);
+				oldchannel.deleteMessageById(messageId).queue();
+			}
 			channel.sendMessage(
 					"Current value: `" + bgame.getValue() + "`\nAdd a reaction to this message and claim your points!")
 					.queue((msg) -> {
@@ -89,7 +92,7 @@ public class ButtonCommand {
 				rank = rank + "**" + (i + 1) + ".**\n";
 			}
 			eb.addField("", "**Rank:**\n" + rank, true);
-			eb.addField("", "**Player:** \n" +users, true);
+			eb.addField("", "**Player:** \n" + users, true);
 			eb.addField("", "**Score:** \n" + scores, true);
 			nickname = (event.getMember().getNickname() != null) ? event.getMember().getNickname()
 					: event.getMember().getEffectiveName();
@@ -128,10 +131,10 @@ public class ButtonCommand {
 			BgscoreUser[] toplist = printBest();
 			boolean founduser = false;
 			int rank = 0;
-			for(int i = 0; i < toplist.length;i++) {
-				if(toplist[i].id == event.getAuthor().getIdLong()) {
-					founduser =true;
-					rank = i+1;
+			for (int i = 0; i < toplist.length; i++) {
+				if (toplist[i].id == event.getAuthor().getIdLong()) {
+					founduser = true;
+					rank = i + 1;
 					break;
 				}
 			}
@@ -139,9 +142,8 @@ public class ButtonCommand {
 			if (!founduser) {
 				channel.sendMessage("You have no score.").queue();
 			} else {
-				channel.sendMessage(
-						event.getAuthor().getAsMention() + ", you have " + toplist[rank-1].bgscore + " points. You are nr. " + rank)
-						.queue();
+				channel.sendMessage(event.getAuthor().getAsMention() + ", you have " + toplist[rank - 1].bgscore
+						+ " points. You are nr. " + rank).queue();
 			}
 		}
 
@@ -151,20 +153,19 @@ public class ButtonCommand {
 			List<Member> mentions = event.getMessage().getMentionedMembers();
 			boolean founduser = false;
 			int rank = 0;
-			for(int i = 0; i < toplist.length;i++) {
-				if(toplist[i].id == mentions.get(0).getIdLong()) {
-					founduser =true;
-					rank = i+1;
+			for (int i = 0; i < toplist.length; i++) {
+				if (toplist[i].id == mentions.get(0).getIdLong()) {
+					founduser = true;
+					rank = i + 1;
 					break;
 				}
 			}
-			
+
 			if (!founduser) {
 				channel.sendMessage(mentions.get(0).getAsMention() + " has no score.").queue();
 			} else {
-				channel.sendMessage(
-						mentions.get(0).getAsMention() + ", has " + toplist[rank-1].bgscore + " points and is nr. " + rank)
-						.queue();
+				channel.sendMessage(mentions.get(0).getAsMention() + ", has " + toplist[rank - 1].bgscore
+						+ " points and is nr. " + rank).queue();
 			}
 		}
 	}

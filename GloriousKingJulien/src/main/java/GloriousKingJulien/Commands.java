@@ -20,6 +20,7 @@ public class Commands extends ListenerAdapter {
 	StatsCommand statscommand = new StatsCommand();
 	StatusBar statusbar = new StatusBar();
 	StatsUserOnlineCommand statsUserOnlineCommand = new StatsUserOnlineCommand();
+	OtherCommands otherCommands = new OtherCommands();
 
 	// ButtonGame
 	ButtonCommand buttoncommand = new ButtonCommand();
@@ -38,7 +39,10 @@ public class Commands extends ListenerAdapter {
 	@Override
 	public void onMessageReceived(MessageReceivedEvent event) {
 		stats.addMsg(event.getGuild().getIdLong());
-		if (event.getAuthor().isBot()) {
+		// prevents from responding to bot and writing in other channels than #spam and
+		// #botfun
+		if (event.getAuthor().isBot() || (event.getGuild().getIdLong() == 747752542741725244l && event.getChannel().getIdLong() != 768600365602963496l
+				&& event.getChannel().getIdLong() != 747776646551175217l)) {
 			return;
 		}
 		statsUserOnlineCommand.run(event);
@@ -52,6 +56,7 @@ public class Commands extends ListenerAdapter {
 		// owner commands
 		if (event.getAuthor().getAsTag().equals(myID)) {
 			statusbar.run(event, jda);
+			otherCommands.run(event, jda);
 		}
 	}
 
