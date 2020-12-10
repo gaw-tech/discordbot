@@ -264,6 +264,7 @@ public class ButtonCommand {
 							servers.get(event.getGuild().getIdLong()).msgId = msg.getIdLong();
 							msg.addReaction(emote).queue();
 						});
+				currentBgame.setValue(10);
 			}
 		}
 	}
