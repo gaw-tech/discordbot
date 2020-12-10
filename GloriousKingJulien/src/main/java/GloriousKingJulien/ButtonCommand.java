@@ -1,11 +1,13 @@
 package GloriousKingJulien;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
 
 import com.github.cliftonlabs.json_simple.JsonArray;
@@ -23,9 +25,7 @@ import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 
 public class ButtonCommand {
 	char prefix = MyBot.prefix;
-	ButtonGame bgame = new ButtonGame();
-	long channelId;
-	long messageId;
+	HashMap<Long, ButtonGame> servers = new HashMap<>();
 	String emote = ":sabotage:766987943734411265";
 
 	JsonObject player; // player id für lambda schissi
@@ -38,38 +38,63 @@ public class ButtonCommand {
 		Message message = event.getMessage();
 		String content = message.getContentRaw();
 		MessageChannel channel = event.getChannel();
-		// getContentRaw() is an atomic getter
-		// getContentDisplay() is a lazy getter which modifies the content for e.g.
-		// console view (strip discord formatting)
-		if (content.equals(this.prefix + "bg")) {
-			channel.sendMessage("Value: " + bgame.getValue()).queue(); // Important to call .queue() on the RestAction
-																		// returned by
-			// sendMessage(...)
+
+		// get the game from the correct guild
+		ButtonGame currentBgame = servers.get(event.getGuild().getIdLong());
+
+		// if the game for the guild does not exist create an instance of the game and
+		// add it to the HashMap
+		if (currentBgame == null) {
+			currentBgame = new ButtonGame(event.getMessageIdLong(), event.getChannel().getIdLong(),
+					event.getGuild().getIdLong());
+			servers.put(event.getGuild().getIdLong(), currentBgame);
 		}
+
 		if (content.startsWith(this.prefix + "setbscore ") && event.getAuthor().getAsTag().equals("Georg#3258")) {
 			event.getMessage().delete().queue();
 			int value = Integer.parseInt(content.replaceAll("[\\D]", ""));
-			bgame.setValue(value);
+			currentBgame.setValue(value);
 		}
 
+		// command to get the button
 		if (content.equals(this.prefix + "button") || content.equals(this.prefix + "b")) {
-			event.getMessage().delete().queue();
-			channelId = channel.getIdLong();
-			if (bgame.channelId != 0) {
-				MessageChannel oldchannel = event.getGuild().getTextChannelById(bgame.channelId);
-				oldchannel.deleteMessageById(messageId).queue();
-			}
-			channel.sendMessage(
-					"Current value: `" + bgame.getValue() + "`\nAdd a reaction to this message and claim your points!")
+			event.getMessage().delete().queue(); // delete the "?b" or "?button" message
+
+			// get the channel of the previous button message
+			MessageChannel oldchannel = event.getGuild().getTextChannelById(currentBgame.channelId);
+
+			// replace the channelId with the new channelId
+			currentBgame.channelId = channel.getIdLong();
+
+			// delete the old message
+			if (currentBgame.initiated)
+				oldchannel.deleteMessageById(currentBgame.msgId).queue();
+
+			// makes that it not always throws errors if noone has typed "?b" or "?button"
+			currentBgame.initiated = true;
+
+			// send the new button message
+			channel.sendMessage("Current value: `"
+					+ currentBgame.getValue() + "`\nAdd a reaction to this message and claim your points!")
 					.queue((msg) -> {
-						messageId = msg.getIdLong();
-						bgame.startGame(messageId, this.channelId);
+
+						// updates the msgId of the game. Its kinda wierd because i can't the
+						// currenBgame variable in this block.
+						servers.get(event.getGuild().getIdLong()).msgId = msg.getIdLong();
+
+						// adds the emote to the message
 						msg.addReaction(emote).queue();
 					});
 		}
 
 		if (content.equals(this.prefix + "buttonboard") || content.equals(this.prefix + "bb")) {
-			BgscoreUser[] toplist = printBest();
+			BgscoreUser[] toplist = printBest(currentBgame.serverId);
+
+			// if not enough ppl
+			if (toplist.length < 5) {
+				channel.sendMessage("Not enough ppl on the scoreboard").queue();
+			}
+
 			String nickname = "";
 			String users = "";
 			String scores = "";
@@ -79,7 +104,7 @@ public class ButtonCommand {
 			eb.setTitle("ButtonBoard", null);
 			eb.setColor(1);
 			eb.setDescription(
-					"Top 10 Players of the button game.\nThe first player will win a smol reward at the end of this year.\n");
+					"Top 10 Players of the button game.\nThe first player will win a smul reward at the end of this year.\n");
 
 			for (int i = 0; i < 10; i++) {
 				nickname = (jda.getGuildById(event.getGuild().getId()).getMemberById(toplist[i].id)
@@ -101,7 +126,7 @@ public class ButtonCommand {
 		}
 
 		if (content.equals(this.prefix + "ba") && event.getAuthor().getAsTag().equals("Georg#3258")) {
-			BgscoreUser[] toplist = printBest();
+			BgscoreUser[] toplist = printBest(currentBgame.serverId);
 			String nickname = "";
 			String users = "";
 			String scores = "";
@@ -128,7 +153,7 @@ public class ButtonCommand {
 		}
 
 		if (content.equals(this.prefix + "bs")) {
-			BgscoreUser[] toplist = printBest();
+			BgscoreUser[] toplist = printBest(currentBgame.serverId);
 			boolean founduser = false;
 			int rank = 0;
 			for (int i = 0; i < toplist.length; i++) {
@@ -149,7 +174,7 @@ public class ButtonCommand {
 
 		// check for a score
 		if (content.startsWith(this.prefix + "bs ")) {
-			BgscoreUser[] toplist = printBest();
+			BgscoreUser[] toplist = printBest(currentBgame.serverId);
 			List<Member> mentions = event.getMessage().getMentionedMembers();
 			boolean founduser = false;
 			int rank = 0;
@@ -168,12 +193,17 @@ public class ButtonCommand {
 						+ " points and is nr. " + rank).queue();
 			}
 		}
+
+		// gives the number of running games
+		if (content.equals(this.prefix + "nrofgames")) {
+			channel.sendMessage("" + servers.size() + "games that i'm aware of.").queue();
+		}
 	}
 
 	// leaderboard
-	private BgscoreUser[] printBest() {
+	private BgscoreUser[] printBest(long serverId) {
 		try {
-			Reader reader = Files.newBufferedReader(Paths.get("buttonscores.json"));
+			Reader reader = Files.newBufferedReader(Paths.get(serverId + "buttonscores.json"));
 			JsonObject parser = (JsonObject) Jsoner.deserialize(reader);
 			JsonArray users = (JsonArray) parser.get("users");
 			BgscoreUser[] userarray = new BgscoreUser[users.size()];
@@ -206,29 +236,44 @@ public class ButtonCommand {
 	}
 
 	// claim pointes
+
 	public void claim(MessageReactionAddEvent event, JDA jda) {
-		if (this.messageId == event.getMessageIdLong() && !event.getUser().isBot()) {
-			MessageChannel channel = jda.getTextChannelById(channelId);
-			if (writeScore(event.getUserIdLong())) {
-				channel.editMessageById(this.messageId,
-						event.getUser().getAsMention() + " has claimed " + bgame.getValue() + " points.").queue();
+
+		// get the game from the correct guild
+		ButtonGame currentBgame = servers.get(event.getGuild().getIdLong());
+
+		// if the game for the guild does not exist create an instance of the game and
+		// add it to the HashMap
+		if (currentBgame == null) {
+			currentBgame = new ButtonGame(event.getMessageIdLong(), event.getChannel().getIdLong(),
+					event.getGuild().getIdLong());
+			servers.put(event.getGuild().getIdLong(), currentBgame);
+		}
+
+		if (currentBgame.msgId == event.getMessageIdLong() && !event.getUser().isBot()) {
+			MessageChannel channel = jda.getTextChannelById(currentBgame.channelId);
+
+			// writeScore returns true if the current value of the button is higher than the
+			// score of the one who pressed the button
+			if (writeScore(event.getUserIdLong(), event.getGuild().getIdLong(), currentBgame)) {
+				channel.editMessageById(currentBgame.msgId,
+						event.getUser().getAsMention() + " has claimed " + currentBgame.getValue() + " points.")
+						.queue();
 				channel.sendMessage("Current value: `10" + "`\nAdd a reaction to this message and claim your points!")
 						.queue((msg) -> {
-							messageId = msg.getIdLong();
-							bgame.reStartGame(messageId, this.channelId);
+							servers.get(event.getGuild().getIdLong()).msgId = msg.getIdLong();
 							msg.addReaction(emote).queue();
 						});
-			} else {
-
 			}
 		}
 	}
 
-	// write the score to json file
-	private boolean writeScore(long playerId) {
+//write the score to the json fil
+	private boolean writeScore(long playerId, long serverId, ButtonGame bgame) {
+		String filename = serverId + "buttonscores.json";
 		try {
 			this.player = null;
-			Reader reader = Files.newBufferedReader(Paths.get("buttonscores.json"));
+			Reader reader = Files.newBufferedReader(Paths.get(filename));
 			JsonObject parser = (JsonObject) Jsoner.deserialize(reader);
 			JsonArray users = (JsonArray) parser.get("users");
 			users.forEach(entry -> {
@@ -240,7 +285,7 @@ public class ButtonCommand {
 
 			if (this.player == null) {
 				System.out.println("2time");
-				BufferedWriter writer = Files.newBufferedWriter(Paths.get("buttonscores.json"));
+				BufferedWriter writer = Files.newBufferedWriter(Paths.get(filename));
 				JsonObject player = new JsonObject();
 				player.put("id", playerId);
 				player.put("bgscore", bgame.getValue());
@@ -250,7 +295,7 @@ public class ButtonCommand {
 				writer.close();
 				return true;
 			} else if (((BigDecimal) this.player.get("bgscore")).longValue() < bgame.getValue()) {
-				BufferedWriter writer = Files.newBufferedWriter(Paths.get("buttonscores.json"));
+				BufferedWriter writer = Files.newBufferedWriter(Paths.get(filename));
 				this.player.put("bgscore", bgame.getValue());
 				parser.put("users", users);
 				Jsoner.serialize(parser, writer);
@@ -258,10 +303,29 @@ public class ButtonCommand {
 				return true;
 			}
 			return false;
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			System.out.println("button bad file");
-			e.printStackTrace();
+		} catch (IOException e) { // TODO Auto-generated catch block
+			try {
+
+				// creates a new file if it does not exist
+				System.out.println("button bad file");
+				System.out.println("2time");
+				File file = new File(filename);
+				BufferedWriter writer = Files.newBufferedWriter(Paths.get(file.getPath()));
+				JsonObject parser = new JsonObject();
+				JsonArray users = new JsonArray();
+				JsonObject player = new JsonObject();
+				player.put("id", playerId);
+				player.put("bgscore", bgame.getValue());
+				users.add(player);
+				parser.put("users", users);
+				Jsoner.serialize(parser, writer);
+				writer.close();
+				return true;
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				System.out.println("couldnt create file");
+				e1.printStackTrace();
+			}
 		} catch (JsonException e) { // TODO Auto-generated catch block
 			System.out.println("something with the reader");
 			e.printStackTrace();
@@ -282,6 +346,5 @@ public class ButtonCommand {
 
 		}
 		return false;
-
 	}
 }

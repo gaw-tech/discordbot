@@ -3,6 +3,7 @@ package GloriousKingJulien;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
+import java.util.Set;
 
 import javax.security.auth.login.LoginException;
 
@@ -34,7 +35,9 @@ public class MyBot {
 						Thread.sleep(60 * 1000);
 						// System.out.println("saving stats for " + commands.stats.size + " servers.");
 						commands.stats.write();
-						commands.buttoncommand.bgame.run(jda);
+						for (Long game : (Set<Long>) commands.buttoncommand.servers.keySet()) {
+							commands.buttoncommand.servers.get(game).run(jda);
+						}
 						commands.statsUserOnline.run(jda);
 					}
 				} catch (InterruptedException e) {
