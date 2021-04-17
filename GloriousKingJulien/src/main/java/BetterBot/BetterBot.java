@@ -15,7 +15,7 @@ public class BetterBot {
 	public static String prefix = "?";
 	public static String myID = "381154302720213002";
 	static JDA jda;
-	public static String nasaapikey = "xjzIeU6hxxIoN2GC03He8E5UvYx5XRjojwJXmbWW";
+	public static String nasaapikey = "";
 
 	public static void main(String[] args) {
 		Scanner scanner;
