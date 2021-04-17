@@ -17,7 +17,7 @@ plugins {
     id 'application'
 }
 
-version = '1.0'
+version = '1.1'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
@@ -26,6 +26,10 @@ repositories {
     // You can declare any Maven/Ivy/file repository here.
     jcenter()
     mavenCentral()
+    maven {
+      name 'm2-dv8tion'
+      url 'https://m2.dv8tion.net/releases'
+    }
 }
 
 dependencies {
@@ -39,10 +43,11 @@ dependencies {
     //testImplementation 'junit:junit:4.12'
     
     //compile
-    compile 'net.dv8tion:JDA:4.2.0_218'
+    compile 'net.dv8tion:JDA:4.2.1_256'
     compile 'ch.qos.logback:logback-classic:1.1.2'
+    compile 'joda-time:joda-time:2.10.8'
 
-    shadow 'net.dv8tion:JDA:4.2.0_218'
+    shadow 'net.dv8tion:JDA:4.2.1_256'
     shadow localGroovy()
     shadow gradleApi()
     
@@ -59,11 +64,11 @@ dependencies {
 }
 
 shadowJar {
-   archiveBaseName.set('KingJulien')
-   archiveVersion.set('0.3.4')
+   archiveBaseName.set('BetterBot')
+   archiveVersion.set('2.03')
 }
 
 apply plugin: 'java'
 apply plugin: 'com.github.johnrengelman.shadow'
 
-mainClassName = 'GloriousKingJulien.MyBot'
+mainClassName = 'BetterBot.BetterBot'
