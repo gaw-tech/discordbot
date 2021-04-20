@@ -19,13 +19,14 @@ import net.dv8tion.jda.api.entities.MessageEmbed.Field;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.Message.Attachment;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 public class OtherCommands extends ListenerAdapter implements Vorlage {
 	String myID = BetterBot.BetterBot.myID;
 	String topname = "other";
 	String out = "";
-	boolean reading = false;
+	LinkedList<String> yoinked = new LinkedList<>();
 
 	@Override
 	public void onMessageReceived(MessageReceivedEvent event) {
@@ -47,39 +48,6 @@ public class OtherCommands extends ListenerAdapter implements Vorlage {
 				response.editMessageFormat("Ping: `%d ms`", System.currentTimeMillis() - time).queue();
 			});
 		}
-
-		// andri & rubbie space
-		if (event.getAuthor().getId().equals(myID) || event.getAuthor().getId().equals("155419933998579713")
-				|| event.getAuthor().getId().equals("817846061347242026")) {
-			// read file
-			if (content.equals(prefix + "readfile")) {
-				System.out.println("readfile cmd");
-				try {
-					Attachment atch = message.getAttachments().get(0);
-					if (atch != null && atch.getFileExtension().equals("txt")) {
-						File file = atch.downloadToFile().get();
-						Scanner scanner = new Scanner(file);
-						LinkedList<String> msgs = new LinkedList<>();
-						System.out.println("got file");
-						while (scanner.hasNext()) {
-							msgs.add(scanner.nextLine());
-						}
-						System.out.println("read file");
-						reading = true;
-						scanner.close();
-						read(msgs, channel);
-					}
-				} catch (InterruptedException | ExecutionException | FileNotFoundException e) {
-					System.out.println("reading failure stuff idk");
-					e.printStackTrace();
-				}
-			}
-			if (content.equals(prefix + "stop")) {
-				reading = false;
-				message.delete().queue();
-			}
-		}
-
 		// owner space
 		if (event.getAuthor().getId().equals(myID)) {
 			// change nickname of bot
@@ -147,25 +115,28 @@ public class OtherCommands extends ListenerAdapter implements Vorlage {
 				System.out.println(msg);
 				if (msg != null && msg.getAuthor().getId().equals(event.getJDA().getSelfUser().getId())) {
 					msg.delete().queue();
-				} else {
-					System.out.println("msg not found");
 				}
+			}
+			if (content.startsWith(prefix + "yoink ")) {
+				message.delete().queue();
+				yoinked.add(message.getMentionedUsers().get(0).getId());
 			}
 		}
 	}
 
-	// auxiliarry method for ?read
-	void read(LinkedList<String> msgs, MessageChannel cnl) {
-		System.out.println("reading");
-		if (!msgs.isEmpty() && reading) {
-			cnl.sendMessage(msgs.removeFirst()).queue(nmsg -> {
-				read(msgs, cnl);
-			});
+	@Override
+	public void onMessageReactionAdd(MessageReactionAddEvent event) {
+		Message msg = null;
+		if (yoinked.contains(event.getUser().getId())) {
+			msg = event.getChannel().retrieveMessageById(event.getMessageId()).complete();
 		}
-	}
-
-	void red(Attachment atch, MessageChannel channel) {
-
+		if (msg == null)
+			return;
+		if (msg.getAuthor().getId().equals(event.getJDA().getSelfUser().getId())
+				|| msg.getAuthor().getId().equals(BetterBot.BetterBot.myID)
+						&& event.getReactionEmote().getName().contains("cavebob")) {
+			msg.removeReaction(event.getReaction().getReactionEmote().getEmote(), event.getUser()).queue();
+		}
 	}
 
 	@Override
@@ -192,6 +163,6 @@ public class OtherCommands extends ListenerAdapter implements Vorlage {
 		myID = null;
 		topname = null;
 		out = null;
-		reading = false;
+		yoinked = null;
 	}
 }

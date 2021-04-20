@@ -12,10 +12,10 @@ import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 
 public class BetterBot {
-	public static String prefix = "?";
+	public static String prefix = "p";
 	public static String myID = "381154302720213002";
 	static JDA jda;
-	public static String nasaapikey = "";
+	public static String nasaapikey = "xjzIeU6hxxIoN2GC03He8E5UvYx5XRjojwJXmbWW";
 
 	public static void main(String[] args) {
 		Scanner scanner;

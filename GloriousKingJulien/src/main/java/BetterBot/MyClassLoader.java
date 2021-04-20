@@ -33,8 +33,8 @@ public class MyClassLoader extends ClassLoader {
 
 			String source = sb.toString();*/
 
-			//File file = new File("C:\\Users\\Georg\\Desktop\\classtest\\" + name + ".java");
-			File file = new File("/home/pi/commands/" + name + ".java");
+			File file = new File("C:\\Users\\Georg\\Desktop\\classtest\\" + name + ".java");
+			//File file = new File("/home/pi/commands/" + name + ".java");
 			String source = "";
 			Scanner scanner;
 			scanner = new Scanner(file);
@@ -44,8 +44,8 @@ public class MyClassLoader extends ClassLoader {
 			System.out.println(source);
 
 			// Save source in .java file.
-			File root = new File("/home/pi/java");
-			//File root = new File("C:\\java"); // On Windows running on C:\, this is C:\java.
+			//File root = new File("/home/pi/java");
+			File root = new File("C:\\java"); // On Windows running on C:\, this is C:\java.
 			File sourceFile = new File(root, "commands/" + name + ".java");
 			sourceFile.getParentFile().mkdirs();
 			Files.write(sourceFile.toPath(), source.getBytes(StandardCharsets.UTF_8));
