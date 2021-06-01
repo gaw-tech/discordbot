@@ -1,12 +1,13 @@
 package commands;
 
-import BetterBot.Vorlage;
+import BetterBot.Module;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 import org.joda.time.DateTime;
 
@@ -16,20 +17,21 @@ import com.github.cliftonlabs.json_simple.JsonObject;
 import com.github.cliftonlabs.json_simple.Jsoner;
 
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-public class Epic extends ListenerAdapter implements Vorlage {
+public class Epic extends ListenerAdapter implements Module {
 	EmbedBuilder embed;
 	int hourofday = 0;
 	ArrayList<EPICdata> datalist = new ArrayList<>();
-	String topname = "epic";
+	String topname = "EPIC";
 
 	@Override
-	public void onMessageReceived(MessageReceivedEvent event) {
+	public void run_message(MessageReceivedEvent event) {
 		if (event.getAuthor().isBot())
 			return;
 		Message message = event.getMessage();
@@ -90,7 +92,7 @@ public class Epic extends ListenerAdapter implements Vorlage {
 	}
 
 	@Override
-	public EmbedBuilder help() {
+	public EmbedBuilder get_help() {
 		EmbedBuilder eb = new EmbedBuilder();
 		eb.setTitle("Help EPIC");
 		eb.addField("Description:",
@@ -105,12 +107,17 @@ public class Epic extends ListenerAdapter implements Vorlage {
 	}
 
 	@Override
-	public Field basic_help() {
-		return new Field("EPIC", "`" + prefix + "epic` returns an image of the EPIC from NASA", true, true);
+	public Field get_basic_help() {
+		return new Field(topname, "`" + prefix + "epic` returns an image of the EPIC from NASA", true, true);
 	}
 
 	@Override
-	public String gettopname() {
+	public boolean has_basic_help() {
+		return true;
+	}
+
+	@Override
+	public String get_topname() {
 		return topname;
 	}
 
@@ -120,6 +127,20 @@ public class Epic extends ListenerAdapter implements Vorlage {
 		hourofday = 0;
 		datalist = null;
 		topname = null;
+	}
+
+	@Override
+	public void run_reaction(MessageReactionAddEvent event) {
+	}
+
+	@Override
+	public boolean has_reaction() {
+		return false;
+	}
+
+	@Override
+	public LinkedList<String> get_short_commands() {
+		return new LinkedList<String>();
 	}
 
 }

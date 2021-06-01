@@ -1,135 +1,222 @@
 package BetterBot;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map.Entry;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.MessageEmbed.Field;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 public class BetterCommands extends ListenerAdapter {
 	String myId = BetterBot.myID;
 	String prefix = BetterBot.prefix;
-	HashMap<String, Vorlage> loaded = new HashMap<>();
+	private static HashMap<String, Module> loaded = new HashMap<>();
+	private static LinkedList<Field> basic_help_fields = new LinkedList<>();
+	private static HashMap<String, Module> short_commands = new HashMap<>();
+	private static LinkedList<Module> reaction_modules = new LinkedList<>();
+
+	public static int load(String modulename) {
+		try {
+			if (loaded.containsKey(modulename)) {
+				return 0;
+			}
+			ClassLoader parentClassLoader = MyClassLoader.class.getClassLoader();
+			MyClassLoader classLoader = new MyClassLoader(parentClassLoader);
+			Module instance = (Module) classLoader.loadClass(modulename).getConstructor().newInstance();
+			if (instance.has_basic_help()) {
+				basic_help_fields.add(instance.get_basic_help());
+			}
+			if (instance.has_reaction()) {
+				reaction_modules.add(instance);
+			}
+			for (String cmd : instance.get_short_commands()) {
+				short_commands.put(cmd, instance);
+			}
+			loaded.put(modulename, instance);
+			return 1;
+		} catch (Exception | Error e) {
+			e.printStackTrace();
+			return -1;
+		}
+	}
+
+	public static int unload(String modulename) {
+		try {
+			if (!loaded.containsKey(modulename)) {
+				return 0;
+			}
+			Module instance = loaded.get(modulename);
+			for (String cmd : instance.get_short_commands()) {
+				short_commands.remove(cmd);
+			}
+			loaded.remove(modulename);
+			reload_basic_help_fields();
+			reload_reaction_modules();
+			return 1;
+		} catch (Exception | Error e) {
+			e.printStackTrace();
+			return -1;
+		}
+
+	}
+
+	private static void reload_basic_help_fields() {
+		basic_help_fields = new LinkedList<>();
+		for (String key : loaded.keySet()) {
+			Module module = loaded.get(key);
+			if (module.has_basic_help()) {
+				basic_help_fields.add(module.get_basic_help());
+			}
+		}
+	}
+
+	private static void reload_reaction_modules() {
+		reaction_modules = new LinkedList<>();
+		for (String key : loaded.keySet()) {
+			Module module = loaded.get(key);
+			if (module.has_reaction()) {
+				reaction_modules.add(module);
+			}
+		}
+	}
 
 	@Override
 	public void onMessageReceived(MessageReceivedEvent event) {
 		Message message = event.getMessage();
 		String content = message.getContentRaw();
 		MessageChannel channel = message.getChannel();
-		// help
-		if (content.startsWith(prefix + "help") && !event.getAuthor().isBot()) {
-			if (content.length() == 5) {
-				EmbedBuilder eb = new EmbedBuilder();
-				eb.setTitle(
-						"Help from " + ((event.getGuild().getMember(event.getJDA().getSelfUser()).getNickname() == null)
-								? event.getJDA().getSelfUser().getName()
-								: event.getGuild().getMember(event.getJDA().getSelfUser()).getNickname()));
-				eb.addField("Help", "`" + prefix + "help` for this message\n`" + prefix
-						+ "help <topic>` for more detailed help of a command", true);
-				for (String s : loaded.keySet()) {
-					eb.addField(loaded.get(s).basic_help());
+		if (content.startsWith(prefix)) {
+			String first_argument = (content.substring(prefix.length()).contains(" "))
+					? content.substring(prefix.length()).split(" ")[0]
+					: content.substring(prefix.length());
+			for (String module : loaded.keySet()) {
+				if (loaded.get(module).get_topname().equalsIgnoreCase(first_argument)) {
+					loaded.get(module).run_message(event);
 				}
-				String nickname = (event.getMember().getNickname() != null) ? event.getMember().getNickname()
-						: event.getMember().getEffectiveName();
-				eb.setFooter("Summoned by: " + nickname, event.getAuthor().getAvatarUrl());
-				channel.sendMessage(eb.build()).queue();
-			} else {
-				String[] split_help = content.split(" ");
-				String key = "";
-				for (String s : loaded.keySet()) {
-					if (loaded.get(s).gettopname().equalsIgnoreCase(split_help[1])) {
-						key = s;
-						break;
+			}
+			for (String cmd : short_commands.keySet()) {
+				if (cmd.equalsIgnoreCase(first_argument)) {
+					short_commands.get(cmd).run_message(event);
+				}
+			}
+			// help
+			if (content.startsWith(prefix + "help") && !event.getAuthor().isBot()) {
+				if (content.length() == 4 + prefix.length()) {
+					EmbedBuilder eb = new EmbedBuilder();
+					eb.setTitle("Help from "
+							+ ((event.getGuild().getMember(event.getJDA().getSelfUser()).getNickname() == null)
+									? event.getJDA().getSelfUser().getName()
+									: event.getGuild().getMember(event.getJDA().getSelfUser()).getNickname()));
+					eb.addField("Help", "`" + prefix + "help` for this message\n`" + prefix
+							+ "help <topic>` for more detailed help of a command", true);
+					for (Entry<String, Module> entry : loaded.entrySet()) {
+						eb.addField(entry.getValue().get_basic_help());
+					}
+					String nickname = (event.getMember().getNickname() != null) ? event.getMember().getNickname()
+							: event.getMember().getEffectiveName();
+					eb.setFooter("Summoned by: " + nickname, event.getAuthor().getAvatarUrl());
+					channel.sendMessage(eb.build()).queue();
+				} else {
+					String[] split_help = content.split(" ");
+					String key = "";
+					for (String s : loaded.keySet()) {
+						if (loaded.get(s).get_topname().equalsIgnoreCase(split_help[1])) {
+							key = s;
+							break;
+						}
+					}
+					if (key.length() == 0) {
+						message.addReaction(":cringe:826487190183215205").queue(); // cringe emote id
+						return;
+					}
+					EmbedBuilder eb = loaded.get(key).get_help();
+					String nickname = (event.getMember().getNickname() != null) ? event.getMember().getNickname()
+							: event.getMember().getEffectiveName();
+					eb.setFooter("Summoned by: " + nickname, event.getAuthor().getAvatarUrl());
+					channel.sendMessage(eb.build()).queue();
+				}
+			}
+			// owner only
+			if (!event.getAuthor().getId().equals(myId))
+				return;
+			// LOAD command
+			if (content.startsWith(prefix + "load ")) {
+				String dataname = content.split(" ")[1];
+				switch (load(dataname)) {
+				case -1: {
+					channel.sendMessage("Loading failed.").queue();
+				}
+				case 0: {
+					channel.sendMessage(dataname + " is already loaded.").queue();
+				}
+				case 1: {
+					channel.sendMessage(dataname + " was loaded.").queue();
+				}
+				}
+			}
+			// RELOAD command
+			if (content.startsWith(prefix + "reload ")) {
+				String dataname = content.split(" ")[1];
+				switch (unload(dataname)) {
+				case -1: {
+					channel.sendMessage("Unloading failed.").queue();
+				}
+				case 0: {
+					channel.sendMessage(dataname + " is not loaded.").queue();
+				}
+				case 1: {
+					switch (load(dataname)) {
+					case -1: {
+						channel.sendMessage("Reloading failed.").queue();
+					}
+					case 0: {
+						channel.sendMessage(dataname + " is already loaded. Which should not be possible. Yikes.")
+								.queue();
+					}
+					case 1: {
+						channel.sendMessage(dataname + " was reloaded.").queue();
+					}
 					}
 				}
-				if (key.length() == 0) {
-					message.addReaction(":cringe:826487190183215205").queue(); // cringe emote id
-					return;
 				}
-				EmbedBuilder eb = loaded.get(key).help();
-				String nickname = (event.getMember().getNickname() != null) ? event.getMember().getNickname()
-						: event.getMember().getEffectiveName();
-				eb.setFooter("Summoned by: " + nickname, event.getAuthor().getAvatarUrl());
-				channel.sendMessage(eb.build()).queue();
 			}
-		}
-		//owner only
-		if (!event.getAuthor().getId().equals(myId))
-			return;
-		// LOAD command
-		if (content.startsWith(prefix + "load ")) {
-			try {
+
+			// YEET command
+			if (content.startsWith(prefix + "yeet ")) {
 				String dataname = content.split(" ")[1];
-				if (loaded.containsKey(dataname)) {
+				switch (unload(dataname)) {
+				case -1: {
+					channel.sendMessage("Loading failed.").queue();
+				}
+				case 0: {
 					channel.sendMessage(dataname + " is already loaded.").queue();
-					return;
 				}
-				ClassLoader parentClassLoader = MyClassLoader.class.getClassLoader();
-				MyClassLoader classLoader = new MyClassLoader(parentClassLoader);
-				Vorlage instance = (Vorlage) classLoader.loadClass(dataname).getConstructor().newInstance();
-				event.getJDA().addEventListener(instance);
-				loaded.put(dataname, instance);
-				channel.sendMessage(dataname + " was loaded.").queue();
+				case 1: {
+					channel.sendMessage(dataname + " was unloaded.").queue();
+				}
+				}
+			}
 
-			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-					| InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException
-					| NullPointerException e) {
-				channel.sendMessage("Loading failed.").queue();
-				e.printStackTrace();
+			// list the loaded classes
+			if (content.equals(prefix + "list")) {
+				String out = "";
+				for (String i : loaded.keySet()) {
+					out = out + i + "\n";
+				}
+				channel.sendMessage("Loaded modules:\n" + out).queue();
 			}
 		}
+	}
 
-		// RELOAD command
-		if (content.startsWith(prefix + "reload ")) {
-			try {
-				String dataname = content.split(" ")[1];
-				if (!loaded.containsKey(dataname)) {
-					channel.sendMessage(dataname + " is not loaded").queue();
-					return;
-				}
-				MyClassLoader newclass = new MyClassLoader(MyClassLoader.class.getClassLoader());
-				Vorlage instance = (Vorlage) newclass.loadClass(dataname).getDeclaredConstructor().newInstance();
-				event.getJDA().addEventListener(instance);
-				event.getJDA().removeEventListener(loaded.get(dataname));
-				loaded.get(dataname).unload();
-				loaded.put(dataname, instance);
-				channel.sendMessage(dataname + " was reloaded.").queue();
-			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-					| InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException
-					| NullPointerException e) {
-				channel.sendMessage("Reloading failed.").queue();
-				e.printStackTrace();
-			}
-		}
-
-		// YEET command
-		if (content.startsWith(prefix + "yeet ")) {
-			try {
-				String dataname = content.split(" ")[1];
-				if (!loaded.containsKey(dataname)) {
-					channel.sendMessage(dataname + " is not loaded").queue();
-					return;
-				}
-				event.getJDA().removeEventListener(loaded.get(dataname));
-				loaded.get(dataname).unload();
-				loaded.remove(dataname);
-				channel.sendMessage(dataname + " was yeeted.").queue();
-			} catch (NullPointerException e) {
-				channel.sendMessage("Yeeting failed.").queue();
-				e.printStackTrace();
-			}
-		}
-
-		// list the loaded classes
-		if (content.equals(prefix + "list")) {
-			String out = "";
-			for (String i : loaded.keySet()) {
-				out = out + i + "\n";
-			}
-			channel.sendMessage("Loaded modules:\n" + out).queue();
+	@Override
+	public void onMessageReactionAdd(MessageReactionAddEvent event) {
+		for (Module module : reaction_modules) {
+			module.run_reaction(event);
 		}
 	}
 }

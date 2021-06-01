@@ -1,6 +1,6 @@
 package commands;
 
-import BetterBot.Vorlage;
+import BetterBot.Module;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -9,6 +9,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.LinkedList;
 import java.util.Map;
 
 import com.github.cliftonlabs.json_simple.JsonException;
@@ -20,13 +21,14 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-public class Apod extends ListenerAdapter implements Vorlage {
+public class Apod extends ListenerAdapter implements Module {
 	String topname = "apod";
 
 	@Override
-	public void onMessageReceived(MessageReceivedEvent event) {
+	public void run_message(MessageReceivedEvent event) {
 		if (event.getAuthor().isBot())
 			return;
 		// We don't want to respond to other bot accounts, including ourself
@@ -69,7 +71,7 @@ public class Apod extends ListenerAdapter implements Vorlage {
 	}
 
 	@Override
-	public EmbedBuilder help() {
+	public EmbedBuilder get_help() {
 		EmbedBuilder eb = new EmbedBuilder();
 		eb.setTitle("Help APOD");
 		eb.addField("Description:",
@@ -80,18 +82,37 @@ public class Apod extends ListenerAdapter implements Vorlage {
 	}
 
 	@Override
-	public Field basic_help() {
+	public Field get_basic_help() {
 		return new Field("APOD", "`" + prefix + "apod` returns the astronomy picture of the day", true, true);
 	}
 
 	@Override
-	public String gettopname() {
+	public boolean has_basic_help() {
+		return true;
+	}
+
+	@Override
+	public String get_topname() {
 		return topname;
 	}
 
 	@Override
 	public void unload() {
 		topname = null;
+	}
+
+	@Override
+	public void run_reaction(MessageReactionAddEvent event) {
+	}
+
+	@Override
+	public boolean has_reaction() {
+		return false;
+	}
+
+	@Override
+	public LinkedList<String> get_short_commands() {
+		return new LinkedList<String>();
 	}
 }
 

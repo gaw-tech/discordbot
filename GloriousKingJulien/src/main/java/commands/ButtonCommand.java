@@ -1,6 +1,6 @@
 package commands;
 
-import BetterBot.Vorlage;
+import BetterBot.Module;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -30,7 +31,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-public class ButtonCommand extends ListenerAdapter implements Vorlage {
+public class ButtonCommand extends ListenerAdapter implements Module {
 	HashMap<Long, ButtonGame> servers = new HashMap<>();
 	String emote = ":POLICE:796671967922749441";
 	Runnable run = new Runnable() {
@@ -42,7 +43,7 @@ public class ButtonCommand extends ListenerAdapter implements Vorlage {
 		}
 	};
 	ScheduledExecutorService exec = Executors.newScheduledThreadPool(1);
-	String topname = "button";
+	String topname = "Button";
 
 	public ButtonCommand() {
 		exec.scheduleAtFixedRate(run, 0, 1, TimeUnit.MINUTES);
@@ -200,7 +201,7 @@ public class ButtonCommand extends ListenerAdapter implements Vorlage {
 	}
 
 	@Override
-	public void onMessageReceived(MessageReceivedEvent event) {
+	public void run_message(MessageReceivedEvent event) {
 		JDA jda = event.getJDA();
 		if (event.getAuthor().isBot() || event.getAuthor().getIdLong() == 802472545172455444L
 				|| event.getAuthor().getIdLong() == 466292292945313799L) // ignore za
@@ -220,14 +221,14 @@ public class ButtonCommand extends ListenerAdapter implements Vorlage {
 			servers.put(event.getGuild().getIdLong(), currentBgame);
 		}
 
-		if (content.startsWith(this.prefix + "setbscore ") && event.getAuthor().getAsTag().equals("Georg#3258")) {
+		if (content.startsWith(prefix + "setbscore ") && event.getAuthor().getAsTag().equals("Georg#3258")) {
 			event.getMessage().delete().queue();
 			int value = Integer.parseInt(content.replaceAll("[\\D]", ""));
 			currentBgame.setValue(value);
 		}
 
 		// command to get the button
-		if (content.equals(this.prefix + "button") || content.equals(this.prefix + "b")) {
+		if (content.equals(prefix + "button") || content.equals(prefix + "b")) {
 			if (currentBgame.initiated)
 				event.getMessage().delete().queue(); // delete the "?b" or "?button" message
 
@@ -258,7 +259,7 @@ public class ButtonCommand extends ListenerAdapter implements Vorlage {
 					});
 		}
 
-		if (content.equals(this.prefix + "buttonboard") || content.equals(this.prefix + "bb")) {
+		if (content.equals(prefix + "buttonboard") || content.equals(prefix + "bb")) {
 			BgscoreUser[] toplist = printBest(currentBgame.serverId);
 
 			// if not enough ppl
@@ -300,7 +301,7 @@ public class ButtonCommand extends ListenerAdapter implements Vorlage {
 			channel.sendMessage(eb.build()).queue();
 		}
 
-		if (content.equals(this.prefix + "ba") && event.getAuthor().getAsTag().equals("Georg#3258")) {
+		if (content.equals(prefix + "ba") && event.getAuthor().getAsTag().equals("Georg#3258")) {
 			BgscoreUser[] toplist = printBest(currentBgame.serverId);
 			String nickname = "";
 			String users = "";
@@ -339,7 +340,7 @@ public class ButtonCommand extends ListenerAdapter implements Vorlage {
 			channel.sendMessage(eb.build()).queue();
 		}
 
-		if (content.equals(this.prefix + "bs")) {
+		if (content.equals(prefix + "bs")) {
 			BgscoreUser[] toplist = printBest(currentBgame.serverId);
 			boolean founduser = false;
 			int rank = 0;
@@ -360,7 +361,7 @@ public class ButtonCommand extends ListenerAdapter implements Vorlage {
 		}
 
 		// check for a score
-		if (content.startsWith(this.prefix + "bs ")) {
+		if (content.startsWith(prefix + "bs ")) {
 			BgscoreUser[] toplist = printBest(currentBgame.serverId);
 			List<Member> mentions = event.getMessage().getMentionedMembers();
 			boolean founduser = false;
@@ -382,7 +383,7 @@ public class ButtonCommand extends ListenerAdapter implements Vorlage {
 		}
 
 		// gives the number of running games
-		if (content.equals(this.prefix + "nrofgames")) {
+		if (content.equals(prefix + "nrofgames")) {
 			channel.sendMessage("" + servers.size() + " games that i'm aware of.").queue();
 		}
 
@@ -401,7 +402,7 @@ public class ButtonCommand extends ListenerAdapter implements Vorlage {
 	}
 
 	@Override
-	public void onMessageReactionAdd(MessageReactionAddEvent event) {
+	public void run_reaction(MessageReactionAddEvent event) {
 		if (event.getMember().getIdLong() == 802472545172455444L // ignore warudo
 				|| event.getMember().getIdLong() == 466292292945313799L) {
 			return;
@@ -411,7 +412,7 @@ public class ButtonCommand extends ListenerAdapter implements Vorlage {
 	}
 
 	@Override
-	public EmbedBuilder help() {
+	public EmbedBuilder get_help() {
 		EmbedBuilder eb = new EmbedBuilder();
 		eb.setTitle("Help Button");
 		eb.addField("Description:",
@@ -427,13 +428,13 @@ public class ButtonCommand extends ListenerAdapter implements Vorlage {
 	}
 
 	@Override
-	public Field basic_help() {
-		return new Field("Button", "`" + prefix + "b` get the button\n`" + prefix + "bb` shows the ButtonBoard\n`"
+	public Field get_basic_help() {
+		return new Field(topname, "`" + prefix + "b` get the button\n`" + prefix + "bb` shows the ButtonBoard\n`"
 				+ prefix + "bs` your rank in the button game", true, true);
 	}
 
 	@Override
-	public String gettopname() {
+	public String get_topname() {
 		return topname;
 	}
 
@@ -442,11 +443,37 @@ public class ButtonCommand extends ListenerAdapter implements Vorlage {
 		exec.shutdownNow();
 		run = null;
 		exec = null;
-		player =null;
+		player = null;
 		servers = null;
 		emote = null;
 		stupidlambdacounter = 0;
 		topname = null;
+	}
+
+	@Override
+	public boolean has_reaction() {
+		return true;
+	}
+
+	@Override
+	public boolean has_basic_help() {
+		return true;
+	}
+
+	@Override
+	public LinkedList<String> get_short_commands() {
+		LinkedList<String> short_commands = new LinkedList<>();
+		short_commands.add("b");
+		short_commands.add("bs");
+		short_commands.add("ba");
+		short_commands.add("bb");
+		short_commands.add("button");
+		short_commands.add("buttonscore");
+		short_commands.add("bamboozle");
+		short_commands.add("nrofgames");
+		short_commands.add("setbscore");
+		short_commands.add("buttonboard");
+		return short_commands;
 	}
 }
 

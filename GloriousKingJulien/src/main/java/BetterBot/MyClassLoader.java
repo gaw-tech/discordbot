@@ -18,23 +18,14 @@ public class MyClassLoader extends ClassLoader {
 	}
 
 	public Class<?> loadClass(String name) throws ClassNotFoundException {
-		// if(!"reflection.MyObject".equals(name))
+		// if(!"reflection.MyObject".equals(name)) //i have no clue what this would be
+		// good for but it was in the original code so i'll leave it here for now.
 		// return super.loadClass(name);
 
 		// Prepare source somehow.
 		try {
-			//Path path = Paths.get("C:\\Users\\Georg\\Desktop\\classtest\\" + name + ".java");
-			/*Path path = Paths.get("/home/pi/commands/" + name + ".java");
-
-			StringBuilder sb = new StringBuilder();
-
-			Stream<String> stream = Files.lines(path);
-			stream.forEach(s -> sb.append(s).append("\n"));
-
-			String source = sb.toString();*/
-
-			File file = new File("C:\\Users\\Georg\\Desktop\\classtest\\" + name + ".java");
-			//File file = new File("/home/pi/commands/" + name + ".java");
+			//File file = new File("C:\\Users\\Georg\\Desktop\\classtest\\" + name + ".java");
+			File file = new File("/home/pi/commands/" + name + ".java");
 			String source = "";
 			Scanner scanner;
 			scanner = new Scanner(file);
@@ -44,8 +35,8 @@ public class MyClassLoader extends ClassLoader {
 			System.out.println(source);
 
 			// Save source in .java file.
-			//File root = new File("/home/pi/java");
-			File root = new File("C:\\java"); // On Windows running on C:\, this is C:\java.
+			File root = new File("/home/pi/java");
+			//File root = new File("C:\\java"); // On Windows running on C:\, this is C:\java.
 			File sourceFile = new File(root, "commands/" + name + ".java");
 			sourceFile.getParentFile().mkdirs();
 			Files.write(sourceFile.toPath(), source.getBytes(StandardCharsets.UTF_8));
@@ -58,6 +49,7 @@ public class MyClassLoader extends ClassLoader {
 			URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { root.toURI().toURL() });
 			Class<?> cls = Class.forName("commands." + name, false, classLoader); // Should print "hello".
 
+			scanner.close();
 			return cls;
 
 		} catch (IOException e) {

@@ -12,20 +12,21 @@ import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonObject;
 import com.github.cliftonlabs.json_simple.Jsoner;
 
-import BetterBot.Vorlage;
+import BetterBot.Module;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-public class Neo extends ListenerAdapter implements Vorlage {
+public class Neo extends ListenerAdapter implements Module {
 	String topname = "neo";
 	LinkedList<NeoData> data = new LinkedList<>();
 
 	@Override
-	public void onMessageReceived(MessageReceivedEvent event) {
+	public void run_message(MessageReceivedEvent event) {
 		Message message = event.getMessage();
 		String content = message.getContentRaw();
 		MessageChannel channel = event.getChannel();
@@ -72,25 +73,44 @@ public class Neo extends ListenerAdapter implements Vorlage {
 	}
 
 	@Override
-	public EmbedBuilder help() {
+	public EmbedBuilder get_help() {
 		EmbedBuilder eb = new EmbedBuilder();
 		eb.setTitle("Todo");
 		return eb;
 	}
 
 	@Override
-	public Field basic_help() {
+	public Field get_basic_help() {
 		return new Field("", "", true, true);
+	}
+	
+	@Override
+	public boolean has_basic_help() {
+		return false;
 	}
 
 	@Override
-	public String gettopname() {
+	public String get_topname() {
 		return topname;
 	}
 
 	@Override
 	public void unload() {
 		topname = null;
+	}
+
+	@Override
+	public void run_reaction(MessageReactionAddEvent event) {
+	}
+
+	@Override
+	public boolean has_reaction() {
+		return false;
+	}
+
+	@Override
+	public LinkedList<String> get_short_commands() {
+		return new LinkedList<String>();
 	}
 
 }

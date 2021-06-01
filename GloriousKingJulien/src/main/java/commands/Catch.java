@@ -7,8 +7,8 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Executors;
@@ -20,7 +20,7 @@ import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonObject;
 import com.github.cliftonlabs.json_simple.Jsoner;
 
-import BetterBot.Vorlage;
+import BetterBot.Module;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Member;
@@ -31,8 +31,8 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-public class Catch extends ListenerAdapter implements Vorlage {
-	String topname = "catch";
+public class Catch extends ListenerAdapter implements Module {
+	String topname = "Catch";
 	HashMap<Long, CatchGame> servers = new HashMap<>();
 
 	JsonObject player; // player id für lambda schissi
@@ -89,9 +89,8 @@ public class Catch extends ListenerAdapter implements Vorlage {
 	// claim pointes
 
 	@Override
-	public void onMessageReactionAdd(MessageReactionAddEvent event) {
-		
-		
+	public void run_reaction(MessageReactionAddEvent event) {
+
 		// we only want to check stuff if there is a game running and no bots
 		if (!servers.keySet().contains(event.getGuild().getIdLong()) || event.getUser().isBot()) {
 			return;
@@ -133,15 +132,15 @@ public class Catch extends ListenerAdapter implements Vorlage {
 		currentCgame.cooldownstart = System.currentTimeMillis();
 		currentCgame.itemholder = event.getUserIdLong();
 		currentCgame.itemholdertag = event.getUser().getAsTag();
-		currentCgame.oldmessage.editMessage("Someone stole the item, the cooldown is " + currentCgame.cooldown / 1000.0 + " seconds.\n"
-				+ currentCgame.getTag(true) + " has the thing.").queue((msg) -> {
+		currentCgame.oldmessage.editMessage("Someone stole the item, the cooldown is " + currentCgame.cooldown / 1000.0
+				+ " seconds.\n" + currentCgame.getTag(true) + " has the thing.").queue((msg) -> {
 					servers.get(event.getGuild().getIdLong()).oldmessage = msg;
 				});
 	}
 
 	@Override
-	public void onMessageReceived(MessageReceivedEvent event) {
-		
+	public void run_message(MessageReceivedEvent event) {
+
 		// we only want to check stuff if there is a game running
 		if (event.getAuthor().isBot() || !servers.keySet().contains(event.getGuild().getIdLong())) {
 			// initialize a game command
@@ -339,21 +338,22 @@ public class Catch extends ListenerAdapter implements Vorlage {
 	}
 
 	@Override
-	public EmbedBuilder help() {
+	public EmbedBuilder get_help() {
 		// TODO
 		EmbedBuilder eb = new EmbedBuilder();
 		eb.setAuthor("Help Catch", "https://theuselessweb.com/");
+		eb.setDescription("Todo!");
 		eb.addBlankField(true);
 		return eb;
 	}
 
 	@Override
-	public Field basic_help() {
-		return new Field("Catch", "A new game!!!!!", true, true);
+	public Field get_basic_help() {
+		return null;
 	}
 
 	@Override
-	public String gettopname() {
+	public String get_topname() {
 		return topname;
 	}
 
@@ -366,6 +366,25 @@ public class Catch extends ListenerAdapter implements Vorlage {
 		player = null;
 		stupidlambdacounter = 0;
 		exec = null;
+	}
+
+	@Override
+	public boolean has_reaction() {
+		return true;
+	}
+
+	@Override
+	public boolean has_basic_help() {
+		return false;
+	}
+
+	@Override
+	public LinkedList<String> get_short_commands() {
+		LinkedList<String> short_commands = new LinkedList<>();
+		short_commands.add("c");
+		short_commands.add("ca");
+		short_commands.add("cb");
+		return short_commands;
 	}
 
 }
@@ -430,7 +449,6 @@ class CatchGame {
 				writer.close();
 				return true;
 			} else {
-				System.out.println(player);
 				BufferedWriter writer = Files.newBufferedWriter(Paths.get(filename));
 				this.player.put("catchscore", ((BigDecimal) this.player.get("catchscore")).longValue() + 1);
 				parser.put("users", users);
