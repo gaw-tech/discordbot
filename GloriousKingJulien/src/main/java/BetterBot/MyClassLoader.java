@@ -47,7 +47,7 @@ public class MyClassLoader extends ClassLoader {
 
 			// Load and instantiate compiled class.
 			URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { root.toURI().toURL() });
-			Class<?> cls = Class.forName("commands." + name, false, classLoader); // Should print "hello".
+			Class<?> cls = Class.forName("commands." + name, false, classLoader);
 
 			scanner.close();
 			return cls;
