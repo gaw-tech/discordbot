@@ -1,6 +1,7 @@
 package commands;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -11,17 +12,20 @@ import BetterBot.Module;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Message.Attachment;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
 import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
+import net.dv8tion.jda.api.interactions.commands.Command;
 
 public class OtherCommands implements Module {
 	String myID = BetterBot.myID;
-	String topname = "other";
+	String topname = "Other";
 	String out = "";
 	LinkedList<String> yoinked = new LinkedList<>();
 	LinkedList<String> cleanlist = new LinkedList<>();
@@ -138,10 +142,11 @@ public class OtherCommands implements Module {
 			// load a module from discord
 			if (content.startsWith(prefix + "dload ")) {
 				try {
+					message.delete().queue();
 					Attachment atch = message.getAttachments().get(0);
 					if (atch.getFileExtension().equals("java") || atch.getFileExtension().equals("txt")) {
 						String dataname = content.substring(prefix.length()).split(" ")[1];
-						File file = atch.downloadToFile(new File("/home/pi/commands/" + dataname+".java")).get();
+						File file = atch.downloadToFile(new File("/home/pi/commands/" + dataname + ".java")).get();
 						switch (BetterCommands.load(dataname)) {
 						case -1: {
 							channel.sendMessage("Loading failed.").queue();
@@ -159,6 +164,37 @@ public class OtherCommands implements Module {
 					e.printStackTrace();
 				}
 			}
+			// check slash commands
+			if (content.equals(prefix + "other listslash")) {
+				String out = "Guild commands:\n";
+				List<Command> commands = event.getGuild().retrieveCommands().complete();
+				for (Command cmd : commands) {
+					out += "-" + cmd.getName() + "\n";
+				}
+				out += "Global commands:\n";
+				commands = event.getJDA().retrieveCommands().complete();
+				for (Command cmd : commands) {
+					out += "-" + cmd.getName() + " " + cmd.getId() + "\n";
+				}
+				channel.sendMessage((out.length() == 0) ? "I found no slash commands" : out).queue();
+			}
+			// remove global command
+			if (content.startsWith(prefix + "other rcg ")) {
+				message.delete().queue();
+				content = content.substring(prefix.length());
+				String command_id = content.split(" ")[2];
+				Command command = event.getJDA().retrieveCommandById(command_id).complete();
+				event.getJDA().deleteCommandById(command_id).queue();
+				channel.sendMessage("Deleted global command: " + command.getName()).queue();
+			}
+			// remove all guild commands on all guilds
+			if (content.equals(prefix + "other dagc")) {
+				for (Guild g : event.getJDA().getGuilds()) {
+					for (Command c : g.retrieveCommands().complete()) {
+						c.delete().queue();
+					}
+				}
+			}
 		}
 	}
 
@@ -171,8 +207,7 @@ public class OtherCommands implements Module {
 		if (msg == null)
 			return;
 		if (msg.getAuthor().getId().equals(event.getJDA().getSelfUser().getId())
-				|| msg.getAuthor().getId().equals(myID)
-						&& event.getReactionEmote().getName().contains("cavebob")) {
+				|| msg.getAuthor().getId().equals(myID) && event.getReactionEmote().getName().contains("cavebob")) {
 			msg.removeReaction(event.getReaction().getReactionEmote().getEmote(), event.getUser()).queue();
 		}
 	}
@@ -195,7 +230,7 @@ public class OtherCommands implements Module {
 	public EmbedBuilder get_help() {
 		EmbedBuilder eb = new EmbedBuilder();
 		eb.setTitle("Help Other");
-		eb.addField("Description:", "Just some random commands.", true);
+		eb.addField("Description:", "Just some random commands!", true);
 		eb.addField("Usage:", "`" + prefix + "ping` returns pong", true);
 		return eb;
 	}
@@ -207,7 +242,7 @@ public class OtherCommands implements Module {
 
 	@Override
 	public Field get_basic_help() {
-		return new Field("Other", "`" + prefix + "ping` pong", true, true);
+		return new Field(topname, "`" + prefix + "ping` pong!", true, true);
 	}
 
 	@Override
@@ -231,5 +266,19 @@ public class OtherCommands implements Module {
 		short_commands.add("getmodule");
 		short_commands.add("dload");
 		return short_commands;
+	}
+
+	@Override
+	public void run_slash(SlashCommandEvent event) {
+	}
+
+	@Override
+	public HashMap<String, String> get_slash() {
+		return null;
+	}
+
+	@Override
+	public boolean has_slash() {
+		return false;
 	}
 }

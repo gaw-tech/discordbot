@@ -9,6 +9,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
@@ -20,12 +21,14 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
+import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.Command;
 
 public class Apod extends ListenerAdapter implements Module {
-	String topname = "apod";
+	String topname = "APOD";
 
 	@Override
 	public void run_message(MessageReceivedEvent event) {
@@ -83,7 +86,7 @@ public class Apod extends ListenerAdapter implements Module {
 
 	@Override
 	public Field get_basic_help() {
-		return new Field("APOD", "`" + prefix + "apod` returns the astronomy picture of the day", true, true);
+		return new Field(topname, "`" + prefix + "apod` returns the astronomy picture of the day", true, true);
 	}
 
 	@Override
@@ -113,6 +116,57 @@ public class Apod extends ListenerAdapter implements Module {
 	@Override
 	public LinkedList<String> get_short_commands() {
 		return new LinkedList<String>();
+	}
+
+	@Override
+	public void run_slash(SlashCommandEvent event) {
+		if (event.getName().equals("apod")) {
+			event.deferReply();
+			try {
+				URL url;
+				url = new URL("https://api.nasa.gov/planetary/apod?api_key=" + BetterBot.BetterBot.nasaapikey);
+				HttpURLConnection con = (HttpURLConnection) url.openConnection();
+				con.setRequestProperty("accept", "application/json");
+				BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+				String inputLine;
+				StringBuffer webcontent = new StringBuffer();
+				while ((inputLine = in.readLine()) != null) {
+					webcontent.append(inputLine);
+				}
+				in.close();
+				JsonObject parser = (JsonObject) Jsoner.deserialize(webcontent.toString());
+				String explanation = (String) parser.get("explanation");
+				String hdurl = (String) parser.get("hdurl");
+				String title = (String) parser.get("title");
+				EmbedBuilder eb = new EmbedBuilder();
+				eb.setTitle(title);
+				if (explanation.length() > 1000) {
+					explanation = explanation.substring(0, 1000) + "...";
+				}
+				eb.addField("Explanation", explanation, true);
+				eb.setImage(hdurl);
+				eb.setFooter("NASA APIs", "https://api.nasa.gov/assets/img/favicons/favicon-192.png");
+				eb.setAuthor("Astronomy Picture Of the Day", "https://apod.nasa.gov/apod");
+				event.replyEmbeds(eb.build()).queue();
+
+			} catch (IOException | JsonException e) {
+				event.reply("Oof. Something went wrong!");
+				e.printStackTrace();
+			}
+		}
+
+	}
+
+	@Override
+	public HashMap<String, String> get_slash() {
+		HashMap<String, String> slash_commands = new HashMap<>();
+		slash_commands.put("apod", "Astronomy Picture Of the Day");
+		return slash_commands;
+	}
+
+	@Override
+	public boolean has_slash() {
+		return true;
 	}
 }
 

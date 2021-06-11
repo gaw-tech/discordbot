@@ -34,7 +34,7 @@ public class BetterBot {
 					.setChunkingFilter(ChunkingFilter.ALL).setMemberCachePolicy(MemberCachePolicy.ALL).build();
 			;
 
-			commands = new BetterCommands();
+			commands = new BetterCommands(jda);
 			jda.addEventListener(commands);
 
 		} catch (LoginException e) {

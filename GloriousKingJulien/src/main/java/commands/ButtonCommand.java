@@ -27,9 +27,11 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
+import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.InteractionHook;
 
 public class ButtonCommand extends ListenerAdapter implements Module {
 	HashMap<Long, ButtonGame> servers = new HashMap<>();
@@ -87,8 +89,7 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 		return null;
 	}
 
-	// claim pointes
-
+	// claim points
 	public void claim(MessageReactionAddEvent event, JDA jda) {
 
 		// get the game from the correct guild
@@ -97,7 +98,7 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 		// if the game for the guild does not exist create an instance of the game and
 		// add it to the HashMap
 		if (currentBgame == null) {
-			currentBgame = new ButtonGame(event.getMessageIdLong(), event.getChannel(), event.getGuild().getIdLong());
+			currentBgame = new ButtonGame(event.getChannel(), event.getGuild().getIdLong());
 			servers.put(event.getGuild().getIdLong(), currentBgame);
 		}
 
@@ -217,7 +218,7 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 		// if the game for the guild does not exist create an instance of the game and
 		// add it to the HashMap
 		if (currentBgame == null) {
-			currentBgame = new ButtonGame(event.getMessageIdLong(), event.getChannel(), event.getGuild().getIdLong());
+			currentBgame = new ButtonGame(event.getChannel(), event.getGuild().getIdLong());
 			servers.put(event.getGuild().getIdLong(), currentBgame);
 		}
 
@@ -229,9 +230,9 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 
 		// command to get the button
 		if (content.equals(prefix + "button") || content.equals(prefix + "b")) {
-			if (currentBgame.initiated)
+			if (currentBgame.initiated) {
 				event.getMessage().delete().queue(); // delete the "?b" or "?button" message
-
+			}
 			// get the channel of the previous button message
 			MessageChannel oldchannel = currentBgame.channel;
 
@@ -246,9 +247,8 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 			currentBgame.initiated = true;
 
 			// send the new button message
-			channel.sendMessage("Current value: `"
-					+ currentBgame.getValue() + "`\nAdd a reaction to this message and claim your points!")
-					.queue((msg) -> {
+			channel.sendMessage("Current value: `" + currentBgame.getValue()
+					+ "`\nAdd a reaction to this message and claim your points!").queue((msg) -> {
 
 						// updates the msgId of the game. Its kinda wierd because i can't the
 						// currenBgame variable in this block.
@@ -475,6 +475,133 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 		short_commands.add("buttonboard");
 		return short_commands;
 	}
+
+	@Override
+	public void run_slash(SlashCommandEvent event) {
+		// get the game from the correct guild
+		ButtonGame currentBgame = servers.get(event.getGuild().getIdLong());
+		MessageChannel channel = event.getChannel();
+
+		// if the game for the guild does not exist create an instance of the game and
+		// add it to the HashMap
+		if (currentBgame == null) {
+			currentBgame = new ButtonGame(event.getChannel(), event.getGuild().getIdLong());
+			servers.put(event.getGuild().getIdLong(), currentBgame);
+		}
+
+		// command to get the button
+		if (event.getName().equals("button")) {
+			// get the channel of the previous button message
+			MessageChannel oldchannel = currentBgame.channel;
+			
+			//delete the thing from the slash cmd
+			event.deferReply().queue(ih->{
+				ih.deleteOriginal().queue();
+			});
+
+			// replace the channelId with the new channelId
+			currentBgame.channel = channel;
+
+			// delete the old message
+			if (currentBgame.initiated)
+				oldchannel.deleteMessageById(currentBgame.msgId).queue();
+
+			// makes that it not always throws errors if noone has typed "?b" or "?button"
+			currentBgame.initiated = true;
+
+			// send the new button message
+			channel.sendMessage("Current value: `" + currentBgame.getValue()
+					+ "`\nAdd a reaction to this message and claim your points!").queue((msg) -> {
+
+						// updates the msgId of the game. Its kinda wierd because i can't the
+						// currenBgame variable in this block.
+						servers.get(event.getGuild().getIdLong()).msgId = msg.getIdLong();
+
+						// adds the emote to the message
+						msg.addReaction(emote).queue();
+					});
+		}
+		
+		//command to get your button score
+		if(event.getName().equals("buttonscore")) {
+			BgscoreUser[] toplist = printBest(currentBgame.serverId);
+			boolean founduser = false;
+			int rank = 0;
+			for (int i = 0; i < toplist.length; i++) {
+				if (toplist[i].id == event.getMember().getIdLong()) {
+					founduser = true;
+					rank = i + 1;
+					break;
+				}
+			}
+
+			if (!founduser) {
+				event.reply("You have no score.").queue();
+			} else {
+				event.reply(event.getMember().getAsMention() + ", you have " + toplist[rank - 1].bgscore
+						+ " points. You are nr. " + rank).queue();
+			}
+		}
+		
+		//command to get the scoreboard
+		if (event.getName().equals("buttonboard")) {
+			InteractionHook interactionHook = event.deferReply().complete();
+			BgscoreUser[] toplist = printBest(currentBgame.serverId);
+
+			// if not enough ppl
+			if (toplist.length < 5) {
+				channel.sendMessage("Not enough ppl on the scoreboard").queue();
+			}
+
+			String nickname = "";
+			String users = "";
+			String scores = "";
+			String rank = "";
+
+			EmbedBuilder eb = new EmbedBuilder();
+			eb.setTitle("ButtonBoard", null);
+			eb.setColor(1);
+			eb.setDescription("Top 10 Players of the button game.\n");
+
+			for (int i = 0; i < 10; i++) {
+				if (event.getGuild().getMemberById(toplist[i].id) != null) {
+					nickname = (event.getGuild().getMemberById(toplist[i].id)
+							.getNickname() != null)
+									?event.getGuild().getMemberById(toplist[i].id)
+											.getNickname()
+									: event.getGuild().getMemberById(toplist[i].id)
+											.getEffectiveName();
+				} else {
+					nickname = "" + toplist[i].id;
+				}
+				users = users + nickname + ":\n";
+				scores = scores + toplist[i].bgscore + "\n";
+				rank = rank + "**" + (i + 1) + ".**\n";
+			}
+			eb.addField("", "**Rank:**\n" + rank, true);
+			eb.addField("", "**Player:** \n" + users, true);
+			eb.addField("", "**Score:** \n" + scores, true);
+			nickname = (event.getMember().getNickname() != null) ? event.getMember().getNickname()
+					: event.getMember().getEffectiveName();
+			eb.setFooter("Summoned by: " + nickname, event.getUser().getAvatarUrl());
+			interactionHook.editOriginalEmbeds(eb.build()).queue();
+		}
+
+	}
+
+	@Override
+	public HashMap<String, String> get_slash() {
+		HashMap<String, String> slash_commands = new HashMap<>();
+		slash_commands.put("button", "Sends the button from the ButtonGame.");
+		slash_commands.put("buttonscore","Tells you your rank on the ButtonGame scoreboard.");
+		slash_commands.put("buttonboard", "Lists the top 10 players of the ButtonGame.");
+		return slash_commands;
+	}
+
+	@Override
+	public boolean has_slash() {
+		return true;
+	}
 }
 
 class BgscoreUser {
@@ -489,15 +616,14 @@ class BgscoreUser {
 
 class ButtonGame {
 	private long value = 10;
-	long msgId;
+	long msgId = 0;
 	MessageChannel channel;
 	long serverId;
 	boolean initiated = false;
 	boolean candelete = false;
 
 	// Constructor
-	ButtonGame(long msgId, MessageChannel channel, long serverId) {
-		this.msgId = msgId;
+	ButtonGame(MessageChannel channel, long serverId) {
 		this.channel = channel;
 		this.serverId = serverId;
 	}

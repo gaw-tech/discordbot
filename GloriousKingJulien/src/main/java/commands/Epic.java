@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 
 import org.joda.time.DateTime;
@@ -16,6 +17,7 @@ import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonObject;
 import com.github.cliftonlabs.json_simple.Jsoner;
 
+import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -23,6 +25,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.InteractionHook;
 
 public class Epic extends ListenerAdapter implements Module {
 	EmbedBuilder embed;
@@ -141,6 +144,56 @@ public class Epic extends ListenerAdapter implements Module {
 	@Override
 	public LinkedList<String> get_short_commands() {
 		return new LinkedList<String>();
+	}
+
+	@Override
+	public void run_slash(SlashCommandEvent event) {
+		if (event.getName().equals("epic")) {
+			DateTime dt = new DateTime();
+			if (embed == null || dt.getHourOfDay() != hourofday) {
+				InteractionHook interactionHook = event.deferReply().complete();
+				try {
+					URL url;
+					url = new URL("https://epic.gsfc.nasa.gov/api/natural");
+					HttpURLConnection con = (HttpURLConnection) url.openConnection();
+					con.setRequestProperty("accept", "application/json");
+					BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+					String inputLine;
+					StringBuffer webcontent = new StringBuffer();
+					while ((inputLine = in.readLine()) != null) {
+						webcontent.append(inputLine);
+					}
+					in.close();
+					JsonArray parser = (JsonArray) Jsoner.deserialize(webcontent.toString());
+					datalist = new ArrayList<>();
+					parser.forEach(entity -> {
+						datalist.add(new EPICdata((JsonObject) entity));
+					});
+					EPICdata latest = getByHour(dt.getHourOfDay());
+					EmbedBuilder eb = latest.makeEmbed();
+					event.replyEmbeds(eb.build()).queue();
+					embed = eb;
+					hourofday = dt.getHourOfDay();
+					interactionHook.editOriginalEmbeds(eb.build()).queue();
+				} catch (IOException | JsonException e) {
+					e.printStackTrace();
+				}
+			} else {
+				event.replyEmbeds(embed.build()).queue();
+			}
+		}
+	}
+
+	@Override
+	public HashMap<String, String> get_slash() {
+		HashMap<String, String> slash_commands = new HashMap<>();
+		slash_commands.put("epic", "Get an image from the NASA EPIC.");
+		return slash_commands;
+	}
+
+	@Override
+	public boolean has_slash() {
+		return true;
 	}
 
 }
