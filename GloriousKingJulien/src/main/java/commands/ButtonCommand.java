@@ -442,7 +442,6 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 		short_commands.add("bs");
 		short_commands.add("ba");
 		short_commands.add("bb");
-		short_commands.add("button");
 		short_commands.add("buttonscore");
 		short_commands.add("bamboozle");
 		short_commands.add("nrofgames");
