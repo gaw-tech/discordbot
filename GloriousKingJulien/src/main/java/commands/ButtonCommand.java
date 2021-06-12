@@ -23,19 +23,24 @@ import com.github.cliftonlabs.json_simple.Jsoner;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Emoji;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
+import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.interactions.components.Button;
+import net.dv8tion.jda.api.interactions.components.ButtonStyle;
 
 public class ButtonCommand extends ListenerAdapter implements Module {
 	HashMap<Long, ButtonGame> servers = new HashMap<>();
 	String emote = ":POLICE:796671967922749441";
+	final static String button_message = "Press the button to claim the points.";
 	Runnable run = new Runnable() {
 		@Override
 		public void run() {
@@ -90,38 +95,37 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 	}
 
 	// claim points
-	public void claim(MessageReactionAddEvent event, JDA jda) {
-
+	public void claim(ButtonClickEvent event, JDA jda) {
 		// get the game from the correct guild
-		ButtonGame currentBgame = servers.get(event.getGuild().getIdLong());
+		final ButtonGame currentBgame = servers.get(event.getGuild().getIdLong());
 
 		// if the game for the guild does not exist create an instance of the game and
 		// add it to the HashMap
-		if (currentBgame == null) {
-			currentBgame = new ButtonGame(event.getChannel(), event.getGuild().getIdLong());
-			servers.put(event.getGuild().getIdLong(), currentBgame);
-		}
+		/*
+		 * if (currentBgame == null) { currentBgame = new ButtonGame(event.getChannel(),
+		 * event.getGuild().getIdLong(), jda); servers.put(event.getGuild().getIdLong(),
+		 * currentBgame); }
+		 */ // <this case should not happen so its commented out
 
-		if (currentBgame.msgId == event.getMessageIdLong() && !event.getUser().isBot()) {
+		if (currentBgame.message.getIdLong() == event.getMessageIdLong() && !event.getUser().isBot()) {
 			MessageChannel channel = currentBgame.channel;
 
 			// writeScore returns true if the current value of the button is higher than the
 			// score of the one who pressed the button
-			if (writeScore(event.getUserIdLong(), event.getGuild().getIdLong(), currentBgame)) {
-				channel.editMessageById(currentBgame.msgId,
+			if (writeScore(event.getUser().getIdLong(), event.getGuild().getIdLong(), currentBgame)) {
+				event.getMessage().delete().queue();
+				channel.sendMessage(
 						event.getUser().getAsMention() + " has claimed " + currentBgame.getValue() + " points.")
 						.queue();
-				channel.sendMessage("Current value: `10" + "`\nAdd a reaction to this message and claim your points!")
-						.queue((msg) -> {
-							servers.get(event.getGuild().getIdLong()).msgId = msg.getIdLong();
-							msg.addReaction(emote).queue();
-						});
+				channel.sendMessage(button_message).setActionRow(currentBgame.button).queue((msg) -> {
+					currentBgame.message = msg;
+				});
 				currentBgame.setValue(10);
 			}
 		}
 	}
 
-//write the score to the json fil
+	// write the score to the json fil
 	private boolean writeScore(long playerId, long serverId, ButtonGame bgame) {
 		String filename = serverId + "buttonscores.json";
 		try {
@@ -218,7 +222,7 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 		// if the game for the guild does not exist create an instance of the game and
 		// add it to the HashMap
 		if (currentBgame == null) {
-			currentBgame = new ButtonGame(event.getChannel(), event.getGuild().getIdLong());
+			currentBgame = new ButtonGame(event.getChannel(), event.getGuild().getIdLong(), jda);
 			servers.put(event.getGuild().getIdLong(), currentBgame);
 		}
 
@@ -230,33 +234,23 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 
 		// command to get the button
 		if (content.equals(prefix + "button") || content.equals(prefix + "b")) {
-			if (currentBgame.initiated) {
-				event.getMessage().delete().queue(); // delete the "?b" or "?button" message
-			}
-			// get the channel of the previous button message
-			MessageChannel oldchannel = currentBgame.channel;
-
-			// replace the channelId with the new channelId
+			event.getMessage().delete().queue(); // delete the "?b" or "?button" message replace the channelId with the
+													// new channelId
 			currentBgame.channel = channel;
 
 			// delete the old message
 			if (currentBgame.initiated)
-				oldchannel.deleteMessageById(currentBgame.msgId).queue();
+				currentBgame.message.delete().queue();
 
 			// makes that it not always throws errors if noone has typed "?b" or "?button"
 			currentBgame.initiated = true;
 
 			// send the new button message
-			channel.sendMessage("Current value: `" + currentBgame.getValue()
-					+ "`\nAdd a reaction to this message and claim your points!").queue((msg) -> {
-
-						// updates the msgId of the game. Its kinda wierd because i can't the
-						// currenBgame variable in this block.
-						servers.get(event.getGuild().getIdLong()).msgId = msg.getIdLong();
-
-						// adds the emote to the message
-						msg.addReaction(emote).queue();
-					});
+			channel.sendMessage(button_message).setActionRow(currentBgame.button).queue((msg) -> {
+				// updates the msgId of the game. Its kinda wierd because i can't the
+				// currenBgame variable in this block.
+				servers.get(event.getGuild().getIdLong()).message = msg;
+			});
 		}
 
 		if (content.equals(prefix + "buttonboard") || content.equals(prefix + "bb")) {
@@ -386,29 +380,10 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 		if (content.equals(prefix + "nrofgames")) {
 			channel.sendMessage("" + servers.size() + " games that i'm aware of.").queue();
 		}
-
-		// makes a bamboozle message
-		if (content.equals(prefix + "bamboozle") && event.getAuthor().getId().equals(BetterBot.BetterBot.myID)) {
-			message.delete().queue();
-			for (Long l : servers.keySet()) {
-				ButtonGame cg = servers.get(l);
-				MessageChannel cnl = cg.channel;
-				cnl.sendMessage("Current value: `" + (printBest(cg.serverId)[0].bgscore + 1)
-						+ "`\nAdd a reaction to this message and claim your points!").queue(msg -> {
-							msg.addReaction(emote).queue();
-						});
-			}
-		}
 	}
 
 	@Override
 	public void run_reaction(MessageReactionAddEvent event) {
-		if (event.getMember().getIdLong() == 802472545172455444L // ignore warudo
-				|| event.getMember().getIdLong() == 466292292945313799L) {
-			return;
-		}
-		claim(event, event.getJDA());
-
 	}
 
 	@Override
@@ -452,7 +427,7 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 
 	@Override
 	public boolean has_reaction() {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -485,17 +460,14 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 		// if the game for the guild does not exist create an instance of the game and
 		// add it to the HashMap
 		if (currentBgame == null) {
-			currentBgame = new ButtonGame(event.getChannel(), event.getGuild().getIdLong());
+			currentBgame = new ButtonGame(event.getChannel(), event.getGuild().getIdLong(), event.getJDA());
 			servers.put(event.getGuild().getIdLong(), currentBgame);
 		}
 
 		// command to get the button
 		if (event.getName().equals("button")) {
-			// get the channel of the previous button message
-			MessageChannel oldchannel = currentBgame.channel;
-			
-			//delete the thing from the slash cmd
-			event.deferReply().queue(ih->{
+			// delete the thing from the slash cmd
+			event.deferReply().queue(ih -> {
 				ih.deleteOriginal().queue();
 			});
 
@@ -504,26 +476,21 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 
 			// delete the old message
 			if (currentBgame.initiated)
-				oldchannel.deleteMessageById(currentBgame.msgId).queue();
+				currentBgame.message.delete().queue();
 
 			// makes that it not always throws errors if noone has typed "?b" or "?button"
 			currentBgame.initiated = true;
 
 			// send the new button message
-			channel.sendMessage("Current value: `" + currentBgame.getValue()
-					+ "`\nAdd a reaction to this message and claim your points!").queue((msg) -> {
-
-						// updates the msgId of the game. Its kinda wierd because i can't the
-						// currenBgame variable in this block.
-						servers.get(event.getGuild().getIdLong()).msgId = msg.getIdLong();
-
-						// adds the emote to the message
-						msg.addReaction(emote).queue();
-					});
+			channel.sendMessage(button_message).setActionRow(currentBgame.button).queue((msg) -> {
+				// updates the msgId of the game. Its kinda wierd because i can't the
+				// currenBgame variable in this block.
+				servers.get(event.getGuild().getIdLong()).message = msg;
+			});
 		}
-		
-		//command to get your button score
-		if(event.getName().equals("buttonscore")) {
+
+		// command to get your button score
+		if (event.getName().equals("buttonscore")) {
 			BgscoreUser[] toplist = printBest(currentBgame.serverId);
 			boolean founduser = false;
 			int rank = 0;
@@ -542,8 +509,8 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 						+ " points. You are nr. " + rank).queue();
 			}
 		}
-		
-		//command to get the scoreboard
+
+		// command to get the scoreboard
 		if (event.getName().equals("buttonboard")) {
 			InteractionHook interactionHook = event.deferReply().complete();
 			BgscoreUser[] toplist = printBest(currentBgame.serverId);
@@ -565,12 +532,9 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 
 			for (int i = 0; i < 10; i++) {
 				if (event.getGuild().getMemberById(toplist[i].id) != null) {
-					nickname = (event.getGuild().getMemberById(toplist[i].id)
-							.getNickname() != null)
-									?event.getGuild().getMemberById(toplist[i].id)
-											.getNickname()
-									: event.getGuild().getMemberById(toplist[i].id)
-											.getEffectiveName();
+					nickname = (event.getGuild().getMemberById(toplist[i].id).getNickname() != null)
+							? event.getGuild().getMemberById(toplist[i].id).getNickname()
+							: event.getGuild().getMemberById(toplist[i].id).getEffectiveName();
 				} else {
 					nickname = "" + toplist[i].id;
 				}
@@ -593,13 +557,30 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 	public HashMap<String, String> get_slash() {
 		HashMap<String, String> slash_commands = new HashMap<>();
 		slash_commands.put("button", "Sends the button from the ButtonGame.");
-		slash_commands.put("buttonscore","Tells you your rank on the ButtonGame scoreboard.");
+		slash_commands.put("buttonscore", "Tells you your rank on the ButtonGame scoreboard.");
 		slash_commands.put("buttonboard", "Lists the top 10 players of the ButtonGame.");
 		return slash_commands;
 	}
 
 	@Override
 	public boolean has_slash() {
+		return true;
+	}
+
+	@Override
+	public void run_button(ButtonClickEvent event) {
+		event.deferReply().queue(ih -> {
+			ih.deleteOriginal().queue();
+		});
+		if (event.getMember().getIdLong() == 802472545172455444L // ignore warudo
+				|| event.getMember().getIdLong() == 466292292945313799L) {
+			return;
+		}
+		claim(event, event.getJDA());
+	}
+
+	@Override
+	public boolean has_button() {
 		return true;
 	}
 }
@@ -616,25 +597,26 @@ class BgscoreUser {
 
 class ButtonGame {
 	private long value = 10;
-	long msgId = 0;
 	MessageChannel channel;
 	long serverId;
 	boolean initiated = false;
 	boolean candelete = false;
+	Button button = Button.of(ButtonStyle.PRIMARY, "" + serverId, "10",
+			Emoji.fromEmote("discordloading", 852953358745468938l, true));
+	Message message;
 
 	// Constructor
-	ButtonGame(MessageChannel channel, long serverId) {
+	ButtonGame(MessageChannel channel, long serverId, JDA jda) {
 		this.channel = channel;
 		this.serverId = serverId;
 	}
 
 	public void run() {
-
 		this.value++;
-
+		button = Button.of(ButtonStyle.PRIMARY, "" + serverId, "" + value,
+				Emoji.fromEmote("discordloading", 852953358745468938l, true));
 		if (initiated) {
-			channel.editMessageById(msgId,
-					"Current value: `" + value + "`\nAdd a reaction to this message and claim your points!").queue();
+			message.editMessage(ButtonCommand.button_message).setActionRow(button).queue();
 		}
 	}
 

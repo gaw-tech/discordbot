@@ -18,6 +18,7 @@ import net.dv8tion.jda.api.entities.Message.Attachment;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
 import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
@@ -279,6 +280,15 @@ public class OtherCommands implements Module {
 
 	@Override
 	public boolean has_slash() {
+		return false;
+	}
+
+	@Override
+	public void run_button(ButtonClickEvent event) {
+	}
+
+	@Override
+	public boolean has_button() {
 		return false;
 	}
 }

@@ -27,6 +27,8 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
+import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
+import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -128,7 +130,6 @@ public class Catch extends ListenerAdapter implements Module {
 
 	private void messagematch(MessageReactionAddEvent event) {
 		CatchGame currentCgame = servers.get(event.getGuild().getIdLong());
-		MessageChannel channel = currentCgame.channel;
 		currentCgame.cooldownstart = System.currentTimeMillis();
 		currentCgame.itemholder = event.getUserIdLong();
 		currentCgame.itemholdertag = event.getUser().getAsTag();
@@ -385,6 +386,36 @@ public class Catch extends ListenerAdapter implements Module {
 		short_commands.add("ca");
 		short_commands.add("cb");
 		return short_commands;
+	}
+
+	@Override
+	public void run_slash(SlashCommandEvent event) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void run_button(ButtonClickEvent event) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean has_slash() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean has_button() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public HashMap<String, String> get_slash() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

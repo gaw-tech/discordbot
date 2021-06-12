@@ -17,6 +17,7 @@ import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonObject;
 import com.github.cliftonlabs.json_simple.Jsoner;
 
+import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
@@ -194,6 +195,15 @@ public class Epic extends ListenerAdapter implements Module {
 	@Override
 	public boolean has_slash() {
 		return true;
+	}
+
+	@Override
+	public void run_button(ButtonClickEvent event) {
+	}
+
+	@Override
+	public boolean has_button() {
+		return false;
 	}
 
 }

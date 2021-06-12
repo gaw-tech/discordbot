@@ -2,7 +2,6 @@ package BetterBot;
 
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map.Entry;
 
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -11,6 +10,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
+import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
@@ -25,8 +25,8 @@ public class BetterCommands extends ListenerAdapter {
 	private static HashMap<String, Module> short_commands = new HashMap<>();
 	private static LinkedList<Module> reaction_modules = new LinkedList<>();
 	private static HashMap<String, Module> slash_command_modules = new HashMap<>();
+	private static LinkedList<Module> button_modules = new LinkedList<>();
 	// private static HashMap<String, String> slash_command_ids = new HashMap<>();
-	// //cmd id
 	private static HashMap<String, HashMap<String, String>> slash_command_ids_by_guilds = new HashMap<>(); // guildid
 																											// cmd cmdid
 	static JDA jda;
@@ -75,6 +75,9 @@ public class BetterCommands extends ListenerAdapter {
 					}
 				}
 			}
+			if (instance.has_button()) {
+				button_modules.add(instance);
+			}
 			for (String cmd : instance.get_short_commands()) {
 				short_commands.put(cmd, instance);
 			}
@@ -112,12 +115,24 @@ public class BetterCommands extends ListenerAdapter {
 			loaded.remove(modulename);
 			reload_basic_help_fields();
 			reload_reaction_modules();
+			reload_button_modules();
+			instance.unload();
 			return 1;
 		} catch (Exception | Error e) {
 			e.printStackTrace();
 			return -1;
 		}
 
+	}
+
+	private static void reload_button_modules() {
+		button_modules = new LinkedList<>();
+		for (String key : loaded.keySet()) {
+			Module module = loaded.get(key);
+			if (module.has_button()) {
+				button_modules.add(module);
+			}
+		}
 	}
 
 	private static void reload_basic_help_fields() {
@@ -278,5 +293,12 @@ public class BetterCommands extends ListenerAdapter {
 	@Override
 	public void onSlashCommand(SlashCommandEvent event) {
 		slash_command_modules.get(event.getName()).run_slash(event);
+	}
+	
+	@Override
+	public void onButtonClick(ButtonClickEvent event) {
+		for(Module module : button_modules) {
+			module.run_button(event);
+		}
 	}
 }

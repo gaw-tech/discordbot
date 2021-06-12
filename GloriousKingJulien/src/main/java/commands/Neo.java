@@ -18,6 +18,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
+import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
@@ -63,15 +64,17 @@ public class Neo extends ListenerAdapter implements Module {
 						neo.v_inf = Double.parseDouble((String) dc.getString(8));
 						neo.t_sigma_f = (String) dc.get(9);
 						neo.h = Double.parseDouble((String) dc.getString(10));
-						neo.diameter = (((String) dc.getString(11)) == null)?-1:Double.parseDouble((String) dc.getString(11));
-						neo.diameter_sigma = (((String) dc.getString(12)) == null)?-1:Double.parseDouble((String) dc.getString(12));
+						neo.diameter = (((String) dc.getString(11)) == null) ? -1
+								: Double.parseDouble((String) dc.getString(11));
+						neo.diameter_sigma = (((String) dc.getString(12)) == null) ? -1
+								: Double.parseDouble((String) dc.getString(12));
 						this.data.add(neo);
 					});
 				} catch (IOException | JsonException e) {
 					e.printStackTrace();
 				}
 			}
-			channel.sendMessage(this.data.removeFirst().toEmbed().build()).queue();			
+			channel.sendMessage(this.data.removeFirst().toEmbed().build()).queue();
 		}
 	}
 
@@ -86,7 +89,7 @@ public class Neo extends ListenerAdapter implements Module {
 	public Field get_basic_help() {
 		return new Field("", "", true, true);
 	}
-	
+
 	@Override
 	public boolean has_basic_help() {
 		return false;
@@ -149,23 +152,25 @@ public class Neo extends ListenerAdapter implements Module {
 						neo.v_inf = Double.parseDouble((String) dc.getString(8));
 						neo.t_sigma_f = (String) dc.get(9);
 						neo.h = Double.parseDouble((String) dc.getString(10));
-						neo.diameter = (((String) dc.getString(11)) == null)?-1:Double.parseDouble((String) dc.getString(11));
-						neo.diameter_sigma = (((String) dc.getString(12)) == null)?-1:Double.parseDouble((String) dc.getString(12));
+						neo.diameter = (((String) dc.getString(11)) == null) ? -1
+								: Double.parseDouble((String) dc.getString(11));
+						neo.diameter_sigma = (((String) dc.getString(12)) == null) ? -1
+								: Double.parseDouble((String) dc.getString(12));
 						this.data.add(neo);
 					});
 				} catch (IOException | JsonException e) {
 					e.printStackTrace();
 				}
 				interactionHook.editOriginalEmbeds(data.removeFirst().toEmbed().build()).queue();
-			}else {				
-				event.replyEmbeds(this.data.removeFirst().toEmbed().build()).queue();			
+			} else {
+				event.replyEmbeds(this.data.removeFirst().toEmbed().build()).queue();
 			}
 		}
 	}
 
 	@Override
 	public HashMap<String, String> get_slash() {
-		HashMap<String,String> slash_commands = new HashMap<>();
+		HashMap<String, String> slash_commands = new HashMap<>();
 		slash_commands.put("neo", "Retrieve some info about an object that will come close to earth soon.");
 		return slash_commands;
 	}
@@ -173,6 +178,15 @@ public class Neo extends ListenerAdapter implements Module {
 	@Override
 	public boolean has_slash() {
 		return true;
+	}
+
+	@Override
+	public void run_button(ButtonClickEvent event) {
+	}
+
+	@Override
+	public boolean has_button() {
+		return false;
 	}
 
 }
@@ -191,11 +205,15 @@ class NeoData {
 	double h;
 	double diameter;
 	double diameter_sigma;
-	
+
 	EmbedBuilder toEmbed() {
 		EmbedBuilder eb = new EmbedBuilder();
 		eb.setTitle(des);
-		eb.addField("Data","orbit_id: " + orbit_id + "\nClose-approach time: " + cd + "\nDistance: " + (((long)(dist*149_597_870_700L))/1000.0) + " km\nDiameter: " +((diameter==-1)?"unknown":diameter + " km")  , false);
+		eb.addField("Data",
+				"orbit_id: " + orbit_id + "\nClose-approach time: " + cd + "\nDistance: "
+						+ (((long) (dist * 149_597_870_700L)) / 1000.0) + " km\nDiameter: "
+						+ ((diameter == -1) ? "unknown" : diameter + " km"),
+				false);
 		return eb;
 	}
 }

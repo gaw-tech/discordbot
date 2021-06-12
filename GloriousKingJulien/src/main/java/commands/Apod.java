@@ -21,11 +21,11 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
+import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.commands.Command;
 
 public class Apod extends ListenerAdapter implements Module {
 	String topname = "APOD";
@@ -167,6 +167,15 @@ public class Apod extends ListenerAdapter implements Module {
 	@Override
 	public boolean has_slash() {
 		return true;
+	}
+
+	@Override
+	public void run_button(ButtonClickEvent event) {
+	}
+
+	@Override
+	public boolean has_button() {
+		return false;
 	}
 }
 
