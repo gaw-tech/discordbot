@@ -95,7 +95,7 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 	}
 
 	// claim points
-	public void claim(ButtonClickEvent event, JDA jda) {
+	public void claim(ButtonClickEvent event, JDA jda, InteractionHook ih) {
 		// get the game from the correct guild
 		final ButtonGame currentBgame = servers.get(event.getGuild().getIdLong());
 
@@ -117,10 +117,13 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 				channel.sendMessage(
 						event.getUser().getAsMention() + " has claimed " + currentBgame.getValue() + " points.")
 						.queue();
+				currentBgame.setValue(10);
 				channel.sendMessage(button_message).setActionRow(currentBgame.button).queue((msg) -> {
 					currentBgame.message = msg;
 				});
-				currentBgame.setValue(10);
+				ih.editOriginal("You claimed the button!").queue();
+			} else {
+				ih.editOriginal("Your score is higher than the one of the button, you can't claim it.").queue();
 			}
 		}
 	}
@@ -257,7 +260,7 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 			BgscoreUser[] toplist = printBest(currentBgame.serverId);
 
 			// if not enough ppl
-			if (toplist.length < 5) {
+			if (toplist.length < 10) {
 				channel.sendMessage("Not enough ppl on the scoreboard").queue();
 			}
 
@@ -568,14 +571,12 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 
 	@Override
 	public void run_button(ButtonClickEvent event) {
-		event.deferReply().queue(ih -> {
-			ih.deleteOriginal().queue();
-		});
+		InteractionHook ih = event.deferReply().setEphemeral(true).complete();
 		if (event.getMember().getIdLong() == 802472545172455444L // ignore warudo
 				|| event.getMember().getIdLong() == 466292292945313799L) {
 			return;
 		}
-		claim(event, event.getJDA());
+		claim(event, event.getJDA(), ih);
 	}
 
 	@Override
@@ -625,6 +626,8 @@ class ButtonGame {
 
 	public void setValue(long value) {
 		this.value = value;
+		button = Button.of(ButtonStyle.PRIMARY, "" + serverId, "" + value,
+				Emoji.fromEmote("discordloading", 852953358745468938l, true));
 	}
 
 }
