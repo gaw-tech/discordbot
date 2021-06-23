@@ -292,7 +292,14 @@ public class BetterCommands extends ListenerAdapter {
 
 	@Override
 	public void onSlashCommand(SlashCommandEvent event) {
-		slash_command_modules.get(event.getName()).run_slash(event);
+		//a check if on ETH server and outside of Bots Battleroyal
+		//ETH GUILD ID: 		747752542741725244
+		//BOTS BATTLEROYAL CATEGORY ID: 783818541849378867
+		if(event.getGuild().getId().equals("747752542741725244") && !event.getGuildChannel().getParent().getId().equals("783818541849378867")){
+			event.reply("Please use my Bot in the Category: <#783818541849378867>.").setEphemeral(true).complete();
+		} else {
+			slash_command_modules.get(event.getName()).run_slash(event);
+		}
 	}
 	
 	@Override
