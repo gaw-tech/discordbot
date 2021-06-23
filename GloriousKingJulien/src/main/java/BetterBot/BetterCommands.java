@@ -296,7 +296,11 @@ public class BetterCommands extends ListenerAdapter {
 		//ETH GUILD ID: 		747752542741725244
 		//BOTS BATTLEROYAL CATEGORY ID: 783818541849378867
 		if(event.getGuild().getId().equals("747752542741725244") && !event.getGuildChannel().getParent().getId().equals("783818541849378867")){
-			event.reply("Please use my Bot in the Category: <#783818541849378867>.").setEphemeral(true).complete();
+			try{
+				event.reply("Please use my Bot in the Category: <#783818541849378867>.").setEphemeral(true).complete();
+			} catch(Exception e) {
+				System.out.println("Bot was too slow to send slashReply");
+			}
 		} else {
 			slash_command_modules.get(event.getName()).run_slash(event);
 		}
