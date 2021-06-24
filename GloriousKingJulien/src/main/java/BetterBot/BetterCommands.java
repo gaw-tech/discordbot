@@ -1,8 +1,11 @@
 package BetterBot;
 
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
@@ -29,6 +32,7 @@ public class BetterCommands extends ListenerAdapter {
 	// private static HashMap<String, String> slash_command_ids = new HashMap<>();
 	private static HashMap<String, HashMap<String, String>> slash_command_ids_by_guilds = new HashMap<>(); // guildid
 																											// cmd cmdid
+	static ArrayList<String> slash_channels;
 	static JDA jda;
 
 	BetterCommands(JDA jda) {
@@ -44,6 +48,7 @@ public class BetterCommands extends ListenerAdapter {
 				c.delete().queue();
 			}
 		}
+		slash_channels = Config.get("slash_channels").readStringArray();
 	}
 
 	public static int load(String modulename) {
@@ -220,12 +225,15 @@ public class BetterCommands extends ListenerAdapter {
 				switch (load(dataname)) {
 				case -1: {
 					channel.sendMessage("Loading failed.").queue();
+					break;
 				}
 				case 0: {
 					channel.sendMessage(dataname + " is already loaded.").queue();
+					break;
 				}
 				case 1: {
 					channel.sendMessage(dataname + " was loaded.").queue();
+					break;
 				}
 				}
 			}
@@ -235,21 +243,26 @@ public class BetterCommands extends ListenerAdapter {
 				switch (unload(dataname)) {
 				case -1: {
 					channel.sendMessage("Unloading failed.").queue();
+					break;
 				}
 				case 0: {
 					channel.sendMessage(dataname + " is not loaded.").queue();
+					break;
 				}
 				case 1: {
 					switch (load(dataname)) {
 					case -1: {
 						channel.sendMessage("Reloading failed.").queue();
+						break;
 					}
 					case 0: {
 						channel.sendMessage(dataname + " is already loaded. Which should not be possible. Yikes.")
 								.queue();
+						break;
 					}
 					case 1: {
 						channel.sendMessage(dataname + " was reloaded.").queue();
+						break;
 					}
 					}
 				}
@@ -257,17 +270,20 @@ public class BetterCommands extends ListenerAdapter {
 			}
 
 			// YEET command
-			if (content.startsWith(prefix + "yeet ")) {
+			if (content.startsWith(prefix + "yeet ") || content.startsWith(prefix + "unload ")) {
 				String dataname = content.split(" ")[1];
 				switch (unload(dataname)) {
 				case -1: {
 					channel.sendMessage("Loading failed.").queue();
+					break;
 				}
 				case 0: {
 					channel.sendMessage(dataname + " is already loaded.").queue();
+					break;
 				}
 				case 1: {
 					channel.sendMessage(dataname + " was unloaded.").queue();
+					break;
 				}
 				}
 			}
@@ -279,6 +295,22 @@ public class BetterCommands extends ListenerAdapter {
 					out = out + i + "\n";
 				}
 				channel.sendMessage("Loaded modules:\n" + out).queue();
+			}
+
+			// reload stuff conected to config
+			if (content.equals(prefix + "config reload")) {
+				message.delete().queue();
+				try {
+					Config.load();
+				} catch (FileNotFoundException e) {
+					channel.sendMessage("Configs were not reloaded").queue();
+					e.printStackTrace();
+					return;
+				}
+				slash_channels = Config.get("slash_channels").readStringArray();
+				channel.sendMessage("Config reloaded.").queue(msg ->{
+					msg.delete().queueAfter(15, TimeUnit.SECONDS);
+				});
 			}
 		}
 	}
@@ -292,12 +324,16 @@ public class BetterCommands extends ListenerAdapter {
 
 	@Override
 	public void onSlashCommand(SlashCommandEvent event) {
-		slash_command_modules.get(event.getName()).run_slash(event);
+		if (slash_channels.contains(event.getChannel().getId())) {
+			slash_command_modules.get(event.getName()).run_slash(event);
+		} else {
+			event.reply("Sorry but i cant respond to you in this channel.").setEphemeral(true).queue();
+		}
 	}
-	
+
 	@Override
 	public void onButtonClick(ButtonClickEvent event) {
-		for(Module module : button_modules) {
+		for (Module module : button_modules) {
 			module.run_button(event);
 		}
 	}
