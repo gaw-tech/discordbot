@@ -80,6 +80,7 @@ public class Neo extends ListenerAdapter implements Module {
 
 	@Override
 	public EmbedBuilder get_help() {
+		//TODO
 		EmbedBuilder eb = new EmbedBuilder();
 		eb.setTitle("Todo");
 		return eb;

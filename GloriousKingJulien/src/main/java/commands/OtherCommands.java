@@ -1,10 +1,12 @@
 package commands;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import BetterBot.BetterBot;
 import BetterBot.BetterCommands;
@@ -23,6 +25,8 @@ import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.interactions.commands.Command;
+import BetterBot.Config;
+import BetterBot.ConfigType;
 
 public class OtherCommands implements Module {
 	String myID = BetterBot.myID;
@@ -151,12 +155,15 @@ public class OtherCommands implements Module {
 						switch (BetterCommands.load(dataname)) {
 						case -1: {
 							channel.sendMessage("Loading failed.").queue();
+							break;
 						}
 						case 0: {
 							channel.sendMessage(dataname + " is already loaded.").queue();
+							break;
 						}
 						case 1: {
 							channel.sendMessage(dataname + " was loaded.").queue();
+							break;
 						}
 						}
 					}
@@ -195,6 +202,26 @@ public class OtherCommands implements Module {
 						c.delete().queue();
 					}
 				}
+			}
+			// set channels where slash commands are allowed
+			if (content.startsWith(prefix + "other allow slash ")) {
+				List<TextChannel> channels = message.getMentionedChannels();
+				String data = "{";
+				for (TextChannel c : channels) {
+					data += "\"" + c.getId() + "\",";
+				}
+				Config.setLine(ConfigType.ARRAY_STRING, "slash_channels", data + "}");
+
+				try {
+					Config.save();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				channel.sendMessage("Set the channels for slash commands.").queue(msg -> {
+					msg.delete().queueAfter(15, TimeUnit.SECONDS);
+				});
 			}
 		}
 	}

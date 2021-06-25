@@ -1,8 +1,6 @@
 package BetterBot;
 
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Scanner;
 import javax.security.auth.login.LoginException;
 
 import net.dv8tion.jda.api.JDA;
@@ -13,19 +11,24 @@ import net.dv8tion.jda.api.utils.MemberCachePolicy;
 
 public class BetterBot {
 	public static String prefix = "?";
-	public static String myID = "381154302720213002";
+	public static String myID;
 	static JDA jda;
-	public static String nasaapikey = "xjzIeU6hxxIoN2GC03He8E5UvYx5XRjojwJXmbWW";
+	public static String nasaapikey;
 	private static String token;
 
 	public static void main(String[] args) {
-		Scanner scanner;
+		try {
+			Config.load();
+		} catch (FileNotFoundException e1) {
+			System.out.println("Config file could not be loaded.");
+			e1.printStackTrace();
+			return;
+		}
 		BetterCommands commands;
 		try {
-
-			scanner = new Scanner(new File("info.txt"));
-			token = scanner.next();
-			myID = scanner.next();
+			token = Config.get("token").readString();
+			myID = Config.get("myID").readString();
+			nasaapikey = Config.get("nasaapikey").readString();
 
 			jda = JDABuilder
 					.createDefault(token, GatewayIntent.GUILD_PRESENCES, GatewayIntent.GUILD_MESSAGES,
@@ -39,9 +42,6 @@ public class BetterBot {
 
 		} catch (LoginException e) {
 			System.out.println("what the hek?");
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
