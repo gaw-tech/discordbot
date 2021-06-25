@@ -23,7 +23,7 @@ import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 
 public class Pisrn implements Module {
-	String topname = "pisrn";
+	String topname = "PISRN";
 
 	@Override
 	public void run_message(MessageReceivedEvent event) {
@@ -117,14 +117,15 @@ public class Pisrn implements Module {
 
 	@Override
 	public boolean has_basic_help() {
-		return false;
+		return true;
 	}
 
 	@Override
 	public EmbedBuilder get_help() {
-		// TODO Auto-generated method stub
 		EmbedBuilder eb = new EmbedBuilder();
-		eb.setTitle("Todo");
+		eb.setTitle("Help PISRN");
+		eb.addField("Description:", "PISRN is the acronym for \"People in space right now\".", true);
+		eb.addField("Usage:", "`" + prefix + "pisrn` returns the number of people who are in space right now.", true);
 		return eb;
 	}
 
@@ -137,7 +138,8 @@ public class Pisrn implements Module {
 
 	@Override
 	public Field get_basic_help() {
-		return null;
+		return new Field(topname, "`" + prefix + "pisrn` returns the number of people who are in space right now.", true,
+				true);
 	}
 
 	@Override
