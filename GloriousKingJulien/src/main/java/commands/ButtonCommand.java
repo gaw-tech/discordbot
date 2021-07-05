@@ -394,7 +394,7 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 		EmbedBuilder eb = new EmbedBuilder();
 		eb.setTitle("Help Button");
 		eb.addField("Description:",
-				"Welcome to the button game. The goal of the button game is to claim as much points as possible. This is done by adding a reaction to the \"button message\". Note that your score is the highest score you claimed the button at, so if you claim the button your new score is the value of the button.",
+				"Welcome to the button game. The goal of the button game is to claim as much points as possible. This is done by pressing the \"button\". Note that your score is the highest score you claimed the button at, so if you claim the button your new score is the value of the button.",
 				true);
 		eb.addField("Usage:",
 				"`" + prefix + "b` get the button message\n`" + prefix

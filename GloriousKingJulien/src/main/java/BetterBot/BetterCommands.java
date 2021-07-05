@@ -237,7 +237,7 @@ public class BetterCommands extends ListenerAdapter {
 				}
 				}
 			}
-			// RELOAD command
+			// RELOAD command to reload a module
 			if (content.startsWith(prefix + "reload ")) {
 				String dataname = content.split(" ")[1];
 				switch (unload(dataname)) {

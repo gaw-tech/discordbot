@@ -8,11 +8,12 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
+import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
 public class BetterBot {
 	public static String prefix = "?";
 	public static String myID;
-	static JDA jda;
+	public static JDA jda;
 	public static String nasaapikey;
 	private static String token;
 
@@ -33,9 +34,11 @@ public class BetterBot {
 			jda = JDABuilder
 					.createDefault(token, GatewayIntent.GUILD_PRESENCES, GatewayIntent.GUILD_MESSAGES,
 							GatewayIntent.GUILD_VOICE_STATES, GatewayIntent.DIRECT_MESSAGES,
-							GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGE_REACTIONS)
-					.setChunkingFilter(ChunkingFilter.ALL).setMemberCachePolicy(MemberCachePolicy.ALL).build();
-			;
+							GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_PRESENCES,
+							GatewayIntent.GUILD_MESSAGE_REACTIONS)
+					.setChunkingFilter(ChunkingFilter.ALL).setMemberCachePolicy(MemberCachePolicy.ALL)
+					.enableCache(CacheFlag.ONLINE_STATUS, CacheFlag.CLIENT_STATUS)
+					.setMemberCachePolicy(MemberCachePolicy.ALL).build();
 
 			commands = new BetterCommands(jda);
 			jda.addEventListener(commands);
