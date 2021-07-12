@@ -93,7 +93,13 @@ public class BetterCommands extends ListenerAdapter {
 			return -1;
 		}
 	}
-
+	
+	/*
+	 * returns:
+	 * -1 if there was an error while loading
+	 * 0 if the module was not loaded
+	 * 1 if the unloading was succesful
+	 */
 	public static int unload(String modulename) {
 		try {
 			if (!loaded.containsKey(modulename)) {
@@ -166,6 +172,7 @@ public class BetterCommands extends ListenerAdapter {
 		String content = message.getContentRaw();
 		MessageChannel channel = message.getChannel();
 		if (content.startsWith(prefix)) {
+			//input distribution to the modules
 			String first_argument = (content.substring(prefix.length()).contains(" "))
 					? content.substring(prefix.length()).split(" ")[0]
 					: content.substring(prefix.length());
@@ -278,7 +285,7 @@ public class BetterCommands extends ListenerAdapter {
 					break;
 				}
 				case 0: {
-					channel.sendMessage(dataname + " is already loaded.").queue();
+					channel.sendMessage(dataname + " is not loaded.").queue();
 					break;
 				}
 				case 1: {
