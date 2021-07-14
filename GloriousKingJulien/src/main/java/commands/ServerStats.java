@@ -242,6 +242,7 @@ public class ServerStats extends ListenerAdapter implements Module {
 					br.close();
 				}
 
+				// send the image :D
 				channel.sendFile(new File("stats_char.png")).queue();
 				new File("stats_char.png").delete();
 			} catch (IOException e) {
