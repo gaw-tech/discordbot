@@ -43,11 +43,11 @@ dependencies {
     //testImplementation 'junit:junit:4.12'
     
     //compile
-    compile 'net.dv8tion:JDA:4.2.1_256'
+    compile 'net.dv8tion:JDA:4.3.0_277'
     compile 'ch.qos.logback:logback-classic:1.1.2'
     compile 'joda-time:joda-time:2.10.8'
 
-    shadow 'net.dv8tion:JDA:4.2.1_256'
+    shadow 'net.dv8tion:JDA:4.3.0_277'
     shadow localGroovy()
     shadow gradleApi()
     
@@ -65,7 +65,7 @@ dependencies {
 
 shadowJar {
    archiveBaseName.set('BetterBot')
-   archiveVersion.set('3.00')
+   archiveVersion.set('3.10-guildwise')
 }
 
 apply plugin: 'java'
