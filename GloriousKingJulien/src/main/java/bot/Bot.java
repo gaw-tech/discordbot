@@ -1,4 +1,4 @@
-package BetterBot;
+package bot;
 
 import java.io.FileNotFoundException;
 import javax.security.auth.login.LoginException;
@@ -10,7 +10,7 @@ import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
-public class BetterBot {
+public class Bot {
 	public static String prefix = "?";
 	public static String myID;
 	public static JDA jda;
@@ -25,7 +25,7 @@ public class BetterBot {
 			e1.printStackTrace();
 			return;
 		}
-		BetterCommands commands;
+		MainListener commands;
 		try {
 			token = Config.get("token").readString();
 			myID = Config.get("myID").readString();
@@ -40,7 +40,7 @@ public class BetterBot {
 					.enableCache(CacheFlag.ONLINE_STATUS, CacheFlag.CLIENT_STATUS)
 					.setMemberCachePolicy(MemberCachePolicy.ALL).build();
 
-			commands = new BetterCommands(jda);
+			commands = new MainListener(jda);
 			jda.addEventListener(commands);
 
 		} catch (LoginException e) {

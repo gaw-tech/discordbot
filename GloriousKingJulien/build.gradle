@@ -65,10 +65,10 @@ dependencies {
 
 shadowJar {
    archiveBaseName.set('BetterBot')
-   archiveVersion.set('3.10-guildwise')
+   archiveVersion.set('3.11')
 }
 
 apply plugin: 'java'
 apply plugin: 'com.github.johnrengelman.shadow'
 
-mainClassName = 'BetterBot.BetterBot'
+mainClassName = 'bot.Bot'

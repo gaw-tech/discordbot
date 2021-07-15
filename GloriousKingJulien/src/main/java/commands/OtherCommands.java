@@ -8,9 +8,11 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import BetterBot.BetterBot;
-import BetterBot.BetterCommands;
-import BetterBot.Module;
+import bot.Bot;
+import bot.MainListener;
+import bot.Config;
+import bot.ConfigType;
+import bot.Module;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Activity;
@@ -25,11 +27,9 @@ import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.interactions.commands.Command;
-import BetterBot.Config;
-import BetterBot.ConfigType;
 
 public class OtherCommands implements Module {
-	String myID = BetterBot.myID;
+	String myID = Bot.myID;
 	String topname = "Other";
 	String out = "";
 	LinkedList<String> yoinked = new LinkedList<>();
@@ -152,7 +152,7 @@ public class OtherCommands implements Module {
 					if (atch.getFileExtension().equals("java") || atch.getFileExtension().equals("txt")) {
 						String dataname = content.substring(prefix.length()).split(" ")[1];
 						File file = atch.downloadToFile(new File("/home/pi/commands/" + dataname + ".java")).get();
-						switch (BetterCommands.load(dataname)) {
+						switch (MainListener.load(dataname)) {
 						case -1: {
 							channel.sendMessage("Loading failed.").queue();
 							break;

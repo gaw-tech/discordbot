@@ -1,4 +1,4 @@
-package BetterBot;
+package bot;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -20,9 +20,9 @@ import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 
-public class BetterCommands extends ListenerAdapter {
-	String myId = BetterBot.myID;
-	String prefix = BetterBot.prefix;
+public class MainListener extends ListenerAdapter {
+	String myId = Bot.myID;
+	String prefix = Bot.prefix;
 	private static HashMap<String, Module> loaded = new HashMap<>();
 	private static LinkedList<Field> basic_help_fields = new LinkedList<>();
 	private static HashMap<String, Module> short_commands = new HashMap<>();
@@ -35,14 +35,14 @@ public class BetterCommands extends ListenerAdapter {
 	static ArrayList<String> slash_channels;
 	static JDA jda;
 
-	BetterCommands(JDA jda) {
+	MainListener(JDA jda) {
 		try {
 			jda.awaitReady();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		BetterCommands.jda = jda;
+		MainListener.jda = jda;
 		for (Guild g : jda.getGuilds()) {
 			for (Command c : g.retrieveCommands().complete()) {
 				c.delete().queue();

@@ -1,7 +1,5 @@
 package commands;
 
-import BetterBot.Module;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -21,6 +19,7 @@ import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonObject;
 import com.github.cliftonlabs.json_simple.Jsoner;
 
+import bot.Module;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Emoji;

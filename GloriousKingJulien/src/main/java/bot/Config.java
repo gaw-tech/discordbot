@@ -1,4 +1,4 @@
-package BetterBot;
+package bot;
 
 import java.io.File;
 import java.io.FileNotFoundException;

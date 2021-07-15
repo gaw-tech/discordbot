@@ -1,4 +1,4 @@
-package BetterBot;
+package bot;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 
 public interface Module {
-	public String prefix = BetterBot.prefix;
+	public String prefix = Bot.prefix;
 	
 	public void run_message(MessageReceivedEvent event);
 	

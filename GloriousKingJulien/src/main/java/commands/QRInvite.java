@@ -10,7 +10,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.LinkedList;
 
-import BetterBot.Module;
+import bot.Module;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Invite;
 import net.dv8tion.jda.api.entities.Message;

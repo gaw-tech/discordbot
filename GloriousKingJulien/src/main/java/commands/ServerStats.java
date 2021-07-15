@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.joda.time.DateTime;
 
-import BetterBot.Module;
+import bot.Module;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -55,7 +55,7 @@ public class ServerStats extends ListenerAdapter implements Module {
 
 	public ServerStats() {
 		exec.scheduleAtFixedRate(run, 0, 1, TimeUnit.MINUTES);
-		jda = BetterBot.BetterBot.jda;
+		jda = bot.Bot.jda;
 		jda.addEventListener(this);
 		dayofyear = new DateTime().getDayOfYear();
 	}

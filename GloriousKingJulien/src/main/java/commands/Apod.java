@@ -1,7 +1,5 @@
 package commands;
 
-import BetterBot.Module;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -17,6 +15,7 @@ import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonObject;
 import com.github.cliftonlabs.json_simple.Jsoner;
 
+import bot.Module;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
@@ -41,7 +40,7 @@ public class Apod extends ListenerAdapter implements Module {
 		if (content.equals(prefix + "apod")) {
 			try {
 				URL url;
-				url = new URL("https://api.nasa.gov/planetary/apod?api_key=" + BetterBot.BetterBot.nasaapikey);
+				url = new URL("https://api.nasa.gov/planetary/apod?api_key=" + bot.Bot.nasaapikey);
 				HttpURLConnection con = (HttpURLConnection) url.openConnection();
 				con.setRequestProperty("accept", "application/json");
 				BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
@@ -124,7 +123,7 @@ public class Apod extends ListenerAdapter implements Module {
 			event.deferReply();
 			try {
 				URL url;
-				url = new URL("https://api.nasa.gov/planetary/apod?api_key=" + BetterBot.BetterBot.nasaapikey);
+				url = new URL("https://api.nasa.gov/planetary/apod?api_key=" + bot.Bot.nasaapikey);
 				HttpURLConnection con = (HttpURLConnection) url.openConnection();
 				con.setRequestProperty("accept", "application/json");
 				BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));

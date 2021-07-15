@@ -20,7 +20,7 @@ import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonObject;
 import com.github.cliftonlabs.json_simple.Jsoner;
 
-import BetterBot.Module;
+import bot.Module;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Member;
@@ -145,7 +145,7 @@ public class Catch extends ListenerAdapter implements Module {
 		// we only want to check stuff if there is a game running
 		if (event.getAuthor().isBot() || !servers.keySet().contains(event.getGuild().getIdLong())) {
 			// initialize a game command
-			if (event.getAuthor().getId().equals(BetterBot.BetterBot.myID)
+			if (event.getAuthor().getId().equals(bot.Bot.myID)
 					&& event.getMessage().getContentRaw().equals(prefix + "catch start")) {
 				Long guildid = event.getGuild().getIdLong();
 				servers.put(guildid, new CatchGame(event.getChannel(), guildid));
@@ -321,7 +321,7 @@ public class Catch extends ListenerAdapter implements Module {
 		}
 
 		// owner commands
-		if (!event.getAuthor().getId().equals(BetterBot.BetterBot.myID)) {
+		if (!event.getAuthor().getId().equals(bot.Bot.myID)) {
 			return;
 		}
 		if (content.equals(prefix + "catch list")) {
