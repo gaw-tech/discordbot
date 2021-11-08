@@ -95,7 +95,7 @@ public class MessageCounter implements Module {
 
 					Drawer img = new Drawer(1600, 800);
 					img.drawYLines(0, max, 8, true);
-					img.drawLineGraph(points, max);
+					img.drawLineGraph(points, max, new Color(255, 255, 255));
 					img.drawXLinesTime(System.currentTimeMillis() - 60000 * points.length, System.currentTimeMillis(),
 							10);
 					channel.sendFile(img.getImage(dir + "/" + event.getGuild().getId() + ".png")).queue();
@@ -117,7 +117,7 @@ public class MessageCounter implements Module {
 
 					Drawer img = new Drawer(1600, 800);
 					img.drawYLines(0, max, 8, true);
-					img.drawLineGraph(points, max);
+					img.drawLineGraph(points, max, new Color(255, 255, 255));
 					img.drawXLinesTime(System.currentTimeMillis() - 60000 * points.length, System.currentTimeMillis(),
 							10);
 					channel.sendFile(img.getImage(dir + "/" + event.getGuild().getId() + ".png")).queue();
@@ -151,7 +151,7 @@ public class MessageCounter implements Module {
 					Drawer img = new Drawer(1600, 800);
 					img.drawYLines(0, max, 8, true);
 					for (int i = 0; i < points_array.length; i++) {
-						img.drawLineGraph(points_array[i], max);
+						img.drawLineGraph(points_array[i], max, new Color(255,255,255,(int)(1.0*255/points_array.length*(i+1))));
 					}
 					img.drawXLinesTime(System.currentTimeMillis() - 60000 * 1440, System.currentTimeMillis(), 10);
 					channel.sendFile(img.getImage(dir + "/" + event.getGuild().getId() + ".png")).queue();
@@ -368,10 +368,11 @@ class Drawer {
 		g2d.fillRect(0, 0, width, height);
 	}
 
-	void drawLineGraph(int[] points, int max) {
+	void drawLineGraph(int[] points, int max, Color line_color) {
 		int height_offset = height / 10;
 		int width_offset = width / 10;
 		Graphics2D g2d = img_buf.createGraphics();
+		g2d.setColor(line_color);
 
 		double height_step = 1.0 * (height - 2 * height_offset) / max;
 		double width_step = 1.0 * (width - 2 * width_offset) / (points.length - 1);
