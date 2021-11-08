@@ -1,6 +1,7 @@
 package bot;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -12,6 +13,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
@@ -36,18 +38,18 @@ public class MainListener extends ListenerAdapter {
 	static JDA jda;
 
 	MainListener(JDA jda) {
-		try {
+		/*try {
 			jda.awaitReady();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}*/
 		MainListener.jda = jda;
-		for (Guild g : jda.getGuilds()) {
+		/*for (Guild g : jda.getGuilds()) {
 			for (Command c : g.retrieveCommands().complete()) {
 				c.delete().queue();
 			}
-		}
+		}*/
 		slash_channels = Config.get("slash_channels").readStringArray();
 	}
 
@@ -87,6 +89,7 @@ public class MainListener extends ListenerAdapter {
 				short_commands.put(cmd, instance);
 			}
 			loaded.put(modulename, instance);
+			updateSavedModules();
 			return 1;
 		} catch (Exception | Error e) {
 			e.printStackTrace();
@@ -127,6 +130,7 @@ public class MainListener extends ListenerAdapter {
 			reload_basic_help_fields();
 			reload_reaction_modules();
 			reload_button_modules();
+			updateSavedModules();
 			instance.unload();
 			return 1;
 		} catch (Exception | Error e) {
@@ -134,6 +138,20 @@ public class MainListener extends ListenerAdapter {
 			return -1;
 		}
 
+	}
+	
+	private static void updateSavedModules() {
+		String data = "{";
+		for (String m : loaded.keySet()) {
+			data += "\"" + m + "\",";
+		}
+		Config.setLine(ConfigType.ARRAY_STRING, "modules", data + "}");
+		try {
+			Config.save();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	private static void reload_button_modules() {
@@ -324,6 +342,9 @@ public class MainListener extends ListenerAdapter {
 
 	@Override
 	public void onMessageReactionAdd(MessageReactionAddEvent event) {
+		if(event.getReactionEmote().getName().equals("addQuote")) {
+			System.out.println(event.getUser().getName() + " quoted " + event.getChannel().retrieveMessageById(event.getMessageId()).complete().getContentRaw() + " from: " +  event.getChannel().retrieveMessageById(event.getMessageId()).complete().getAuthor().getName() + " in: " + event.getChannel().getName());
+		}
 		for (Module module : reaction_modules) {
 			module.run_reaction(event);
 		}

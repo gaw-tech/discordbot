@@ -10,6 +10,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -116,11 +117,16 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 				channel.sendMessage(
 						event.getUser().getAsMention() + " has claimed " + currentBgame.getValue() + " points.")
 						.queue();
+				long points = currentBgame.getValue();
 				currentBgame.setValue(10);
 				channel.sendMessage(button_message).setActionRow(currentBgame.button).queue((msg) -> {
 					currentBgame.message = msg;
 				});
 				ih.editOriginal("You claimed the button!").queue();
+				((MessageChannel) jda.getGuildChannelById(895969374689701888L))
+						.sendMessage(event.getUser().getAsMention() + "(" + event.getUser().getName() + ") has claimed "
+								+ points + " points.")
+						.queue();
 			} else {
 				ih.editOriginal("Your score is higher than the one of the button, you can't claim it.").queue();
 			}
@@ -240,10 +246,6 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 													// new channelId
 			currentBgame.channel = channel;
 
-			// delete the old message
-			if (currentBgame.initiated)
-				currentBgame.message.delete().queue();
-
 			// makes that it not always throws errors if noone has typed "?b" or "?button"
 			currentBgame.initiated = true;
 
@@ -251,7 +253,10 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 			channel.sendMessage(button_message).setActionRow(currentBgame.button).queue((msg) -> {
 				// updates the msgId of the game. Its kinda wierd because i can't the
 				// currenBgame variable in this block.
-				servers.get(event.getGuild().getIdLong()).message = msg;
+				ButtonGame cbg = servers.get(msg.getGuild().getIdLong());
+				if (cbg.message != null)
+					cbg.message.delete().queue();
+				cbg.message = msg;
 			});
 		}
 
@@ -417,6 +422,9 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 
 	@Override
 	public void unload() {
+		for (Entry<Long, ButtonGame> entry : servers.entrySet()) {
+			entry.getValue().message.delete().queue();
+		}
 		exec.shutdownNow();
 		run = null;
 		exec = null;
@@ -475,10 +483,6 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 			// replace the channelId with the new channelId
 			currentBgame.channel = channel;
 
-			// delete the old message
-			if (currentBgame.initiated)
-				currentBgame.message.delete().queue();
-
 			// makes that it not always throws errors if noone has typed "?b" or "?button"
 			currentBgame.initiated = true;
 
@@ -486,7 +490,10 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 			channel.sendMessage(button_message).setActionRow(currentBgame.button).queue((msg) -> {
 				// updates the msgId of the game. Its kinda wierd because i can't the
 				// currenBgame variable in this block.
-				servers.get(event.getGuild().getIdLong()).message = msg;
+				ButtonGame bg = servers.get(event.getGuild().getIdLong());
+				if (bg.message != null)
+					bg.message.delete().queue();
+				bg.message = msg;
 			});
 		}
 
@@ -600,8 +607,8 @@ class ButtonGame {
 	long serverId;
 	boolean initiated = false;
 	boolean candelete = false;
-	Button button = Button.of(ButtonStyle.PRIMARY, "" + serverId, "10",
-			Emoji.fromEmote("discordloading", 852953358745468938l, true));
+	Emoji emoji = Emoji.fromEmote("sipspin", 831867874506178660L, true);
+	Button button = Button.of(ButtonStyle.PRIMARY, "" + serverId, "10", emoji);
 	Message message;
 
 	// Constructor
@@ -612,8 +619,7 @@ class ButtonGame {
 
 	public void run() {
 		this.value++;
-		button = Button.of(ButtonStyle.PRIMARY, "" + serverId, "" + value,
-				Emoji.fromEmote("discordloading", 852953358745468938l, true));
+		button = Button.of(ButtonStyle.PRIMARY, "" + serverId, "" + value, emoji);
 		if (initiated) {
 			message.editMessage(ButtonCommand.button_message).setActionRow(button).queue();
 		}

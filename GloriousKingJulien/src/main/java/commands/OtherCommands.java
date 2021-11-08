@@ -55,6 +55,10 @@ public class OtherCommands implements Module {
 				response.editMessageFormat("Ping: `%d ms`", System.currentTimeMillis() - time).queue();
 			});
 		}
+		if (content.equals(prefix + "time")) {
+			channel.sendMessage("It is: <t:" + System.currentTimeMillis() / 1000 + ">").queue();
+			message.delete().queue();
+		}
 		// owner space
 		if (event.getAuthor().getId().equals(myID)) {
 			// change nickname of bot
@@ -119,7 +123,6 @@ public class OtherCommands implements Module {
 			if (content.equals(prefix + "delete")) {
 				Message msg = message.getReferencedMessage();
 				message.delete().queue();
-				System.out.println(msg);
 				if (msg != null && msg.getAuthor().getId().equals(event.getJDA().getSelfUser().getId())) {
 					msg.delete().queue();
 				}
@@ -141,7 +144,7 @@ public class OtherCommands implements Module {
 			}
 			// get a module to display
 			if (content.startsWith(prefix + "getmodule ")) {
-				File file = new File("/home/pi/commands/" + content.split(" ")[1] + ".java");
+				File file = new File(Bot.path + "/commands/" + content.split(" ")[1] + ".java");
 				channel.sendFile(file).queue();
 			}
 			// load a module from discord
@@ -151,7 +154,7 @@ public class OtherCommands implements Module {
 					Attachment atch = message.getAttachments().get(0);
 					if (atch.getFileExtension().equals("java") || atch.getFileExtension().equals("txt")) {
 						String dataname = content.substring(prefix.length()).split(" ")[1];
-						File file = atch.downloadToFile(new File("/home/pi/commands/" + dataname + ".java")).get();
+						File file = atch.downloadToFile(new File(Bot.path + "/commands/" + dataname + ".java")).get();
 						switch (MainListener.load(dataname)) {
 						case -1: {
 							channel.sendMessage("Loading failed.").queue();
@@ -223,6 +226,15 @@ public class OtherCommands implements Module {
 					msg.delete().queueAfter(15, TimeUnit.SECONDS);
 				});
 			}
+			// memory stuff
+			if (content.startsWith(prefix + "other memory")) {
+				message.delete().queue();
+				Runtime instance = Runtime.getRuntime();
+				long mb = 1024 * 1024;
+				channel.sendMessage(
+						"max mem: " + instance.maxMemory() / mb + "\nfree mem: " + instance.freeMemory() / mb)
+						.complete().delete().queueAfter(10, TimeUnit.SECONDS);
+			}
 		}
 	}
 
@@ -283,6 +295,7 @@ public class OtherCommands implements Module {
 		LinkedList<String> short_commands = new LinkedList<>();
 		short_commands.add("ping");
 		short_commands.add("pong");
+		short_commands.add("time");
 		short_commands.add("nick");
 		short_commands.add("sbar");
 		short_commands.add("servers");

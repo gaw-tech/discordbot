@@ -119,11 +119,12 @@ public class Catch extends ListenerAdapter implements Module {
 		});
 
 		// steal from bot
-		if (System.currentTimeMillis() - currentCgame.cooldownstart < currentCgame.cooldown) {
-			return;
-		}
-
+		// fist check if the reaction was from the old message and if so check if the
+		// cooldown is over
 		if (event.getMessageIdLong() == currentCgame.oldmessage.getIdLong()) {
+			if (System.currentTimeMillis() - currentCgame.cooldownstart < currentCgame.cooldown) {
+				return;
+			}
 			messagematch(event);
 		}
 	}
@@ -133,10 +134,16 @@ public class Catch extends ListenerAdapter implements Module {
 		currentCgame.cooldownstart = System.currentTimeMillis();
 		currentCgame.itemholder = event.getUserIdLong();
 		currentCgame.itemholdertag = event.getUser().getAsTag();
-		currentCgame.oldmessage.editMessage("Someone stole the item, the cooldown is " + currentCgame.cooldown / 1000.0
-				+ " seconds.\n" + currentCgame.getTag(true) + " has the thing.").queue((msg) -> {
+		currentCgame.oldmessage
+				.editMessage("Someone stole the item, the cooldown is " + currentCgame.cooldown / 1000.0 + " seconds.\n"
+						+ currentCgame.getTag(true) + " has the thing.")
+				.queueAfter(new Random().nextInt(10), TimeUnit.SECONDS, (msg) -> {
 					servers.get(event.getGuild().getIdLong()).oldmessage = msg;
 				});
+		((MessageChannel) event.getJDA().getGuildChannelById(897075459739775027L))
+				.sendMessage(event.getUser().getAsMention() + "(" + event.getUser().getName() + ", "
+						+ event.getMember().getNickname() + ") stole the thing.")
+				.queueAfter(2, TimeUnit.MINUTES);
 	}
 
 	@Override
@@ -171,10 +178,6 @@ public class Catch extends ListenerAdapter implements Module {
 			// replace the channelId with the new channelId
 			currentCgame.channel = channel;
 
-			// delete the old message
-			if (currentCgame.oldmessage != null)
-				currentCgame.oldmessage.delete().queue();
-
 			// send the new catch message
 			if (currentCgame.itemholder == 0) {
 				channel.sendMessage(
@@ -182,7 +185,10 @@ public class Catch extends ListenerAdapter implements Module {
 						.queue((msg) -> {
 							// updates the oldmessage of the game. Its kinda wierd because i can't the
 							// currenBgame variable in this block.
-							servers.get(event.getGuild().getIdLong()).oldmessage = msg;
+							CatchGame cg = servers.get(event.getGuild().getIdLong());
+							if (cg.oldmessage != null)
+								cg.oldmessage.delete().queue();
+							cg.oldmessage = msg;
 						});
 			} else {
 				if (currentCgame.cooldown > System.currentTimeMillis() - currentCgame.cooldownstart) {
@@ -190,12 +196,18 @@ public class Catch extends ListenerAdapter implements Module {
 							+ (currentCgame.cooldown - (System.currentTimeMillis() - currentCgame.cooldownstart))
 									/ 1000.0
 							+ " seconds.\n" + currentCgame.getTag(false) + " has the thing.").queue(msg -> {
-								servers.get(event.getGuild().getIdLong()).oldmessage = msg;
+								CatchGame cg = servers.get(event.getGuild().getIdLong());
+								if (cg.oldmessage != null)
+									cg.oldmessage.delete().queue();
+								cg.oldmessage = msg;
 							});
 				} else {
 					channel.sendMessage("Feel free to steal the item by adding a reaction to this message.")
 							.queue(msg -> {
-								servers.get(event.getGuild().getIdLong()).oldmessage = msg;
+								CatchGame cg = servers.get(event.getGuild().getIdLong());
+								if (cg.oldmessage != null)
+									cg.oldmessage.delete().queue();
+								cg.oldmessage = msg;
 							});
 				}
 			}
@@ -216,13 +228,8 @@ public class Catch extends ListenerAdapter implements Module {
 			eb.setDescription("Top 10 Players of the catch game.\n");
 
 			for (int i = 0; i < 10 && i < toplist.length; i++) {
-				if (jda.getGuildById(event.getGuild().getId()).getMemberById(toplist[i].id) != null) {
-					nickname = (jda.getGuildById(event.getGuild().getId()).getMemberById(toplist[i].id)
-							.getNickname() != null)
-									? jda.getGuildById(event.getGuild().getId()).getMemberById(toplist[i].id)
-											.getNickname()
-									: jda.getGuildById(event.getGuild().getId()).getMemberById(toplist[i].id)
-											.getEffectiveName();
+				if (event.getGuild().getMemberById(toplist[i].id) != null) {
+					nickname = event.getGuild().getMemberById(toplist[i].id).getAsMention();
 				} else {
 					nickname = "" + toplist[i].id;
 				}
@@ -343,7 +350,9 @@ public class Catch extends ListenerAdapter implements Module {
 		// TODO
 		EmbedBuilder eb = new EmbedBuilder();
 		eb.setAuthor("Help Catch", "https://theuselessweb.com/");
-		eb.setDescription("Todo!");
+		eb.setDescription(
+				"Basically you react to the person who has it. After it has been taken there is a 2 minute cooldown before it can be taken again.\r\n"
+						+ "with '?c' you can see how much time has passed since it has been last taken and also get a hint as to who has it. 10 minutes after someone took it you can also react to the '?c' message directly to get it");
 		eb.addBlankField(true);
 		return eb;
 	}
@@ -385,19 +394,20 @@ public class Catch extends ListenerAdapter implements Module {
 		short_commands.add("c");
 		short_commands.add("ca");
 		short_commands.add("cb");
+		short_commands.add("cs");
 		return short_commands;
 	}
 
 	@Override
 	public void run_slash(SlashCommandEvent event) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void run_button(ButtonClickEvent event) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override

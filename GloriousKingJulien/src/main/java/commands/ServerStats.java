@@ -197,7 +197,6 @@ public class ServerStats extends ListenerAdapter implements Module {
 				URL url = new URL("https://quickchart.io/chart");
 
 				// channel.sendMessage(url_in).queue(); //TODO
-				System.out.println(url_in);// TODO
 
 				HttpURLConnection con = (HttpURLConnection) url.openConnection();
 				con.setRequestMethod("POST");
@@ -205,7 +204,6 @@ public class ServerStats extends ListenerAdapter implements Module {
 				con.setRequestProperty("Accept", "application/json");
 				con.setDoOutput(true);
 
-				System.out.println("point a");
 				try (OutputStream os = con.getOutputStream()) {
 					byte[] input = url_in.getBytes("utf-8");
 					os.write(input);
@@ -213,7 +211,6 @@ public class ServerStats extends ListenerAdapter implements Module {
 					System.out.println("outputstream error");
 					e.printStackTrace();
 				}
-				System.out.println("point b");
 
 				try (InputStream in = new BufferedInputStream(con.getInputStream());) {
 					ByteArrayOutputStream out = new ByteArrayOutputStream();
