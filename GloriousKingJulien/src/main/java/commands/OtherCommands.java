@@ -59,6 +59,13 @@ public class OtherCommands implements Module {
 			channel.sendMessage("It is: <t:" + System.currentTimeMillis() / 1000 + ">").queue();
 			message.delete().queue();
 		}
+		// source cmd
+		if (content.equals(prefix + "source")) {
+			EmbedBuilder eb = new EmbedBuilder();
+			eb.setDescription("Repo of <@381154302720213002>'s bot.");
+			eb.addField("Link:", "https://github.com/gaw-tech/discordbot", true);
+			channel.sendMessage(eb.build()).queue();
+		}
 		// owner space
 		if (event.getAuthor().getId().equals(myID)) {
 			// change nickname of bot
@@ -262,7 +269,8 @@ public class OtherCommands implements Module {
 		EmbedBuilder eb = new EmbedBuilder();
 		eb.setTitle("Help Other");
 		eb.addField("Description:", "Just some random commands!", true);
-		eb.addField("Usage:", "`" + prefix + "ping` returns pong", true);
+		eb.addField("Usage:", "`" + prefix + "ping` returns pong!\n`" + prefix
+				+ "source` view the repo with the source code of <@778731540359675904>. ", true);
 		return eb;
 	}
 
@@ -273,7 +281,8 @@ public class OtherCommands implements Module {
 
 	@Override
 	public Field get_basic_help() {
-		return new Field(topname, "`" + prefix + "ping` pong!", true, true);
+		return new Field(topname, "`" + prefix + "ping` pong!\n`" + prefix
+				+ "source` view the repo with the source code of <@778731540359675904>. ", true, true);
 	}
 
 	@Override
@@ -297,6 +306,7 @@ public class OtherCommands implements Module {
 		short_commands.add("cleanlist");
 		short_commands.add("getmodule");
 		short_commands.add("dload");
+		short_commands.add("source");
 		return short_commands;
 	}
 
