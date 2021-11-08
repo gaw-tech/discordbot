@@ -208,8 +208,18 @@ public class OtherCommands implements Module {
 			// remove all guild commands on all guilds
 			if (content.equals(prefix + "other dagc")) {
 				for (Guild g : event.getJDA().getGuilds()) {
-					for (Command c : g.retrieveCommands().complete()) {
-						c.delete().queue();
+					try {
+						List<Command> commands = g.retrieveCommands().complete();
+						if (commands != null) {
+							for (Command c : g.retrieveCommands().complete()) {
+								System.out.println("Deleting " + c.getName());
+								c.delete().queue();
+							}
+						} else {
+							System.out.println(g.getName() + " could not retrieve any slash commands");
+						}
+					} catch(Exception e) {
+						e.printStackTrace();
 					}
 				}
 			}
