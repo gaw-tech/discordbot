@@ -226,15 +226,6 @@ public class OtherCommands implements Module {
 					msg.delete().queueAfter(15, TimeUnit.SECONDS);
 				});
 			}
-			// memory stuff
-			if (content.startsWith(prefix + "other memory")) {
-				message.delete().queue();
-				Runtime instance = Runtime.getRuntime();
-				long mb = 1024 * 1024;
-				channel.sendMessage(
-						"max mem: " + instance.maxMemory() / mb + "\nfree mem: " + instance.freeMemory() / mb)
-						.complete().delete().queueAfter(10, TimeUnit.SECONDS);
-			}
 		}
 	}
 
