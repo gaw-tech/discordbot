@@ -94,8 +94,8 @@ public class MessageCounter implements Module {
 					}
 
 					Drawer img = new Drawer(1600, 800);
-					img.drawLineGraph(points);
 					img.drawYLines(0, max, 8, true);
+					img.drawLineGraph(points, max);
 					img.drawXLinesTime(System.currentTimeMillis() - 60000 * points.length, System.currentTimeMillis(),
 							10);
 					channel.sendFile(img.getImage(dir + "/" + event.getGuild().getId() + ".png")).queue();
@@ -116,10 +116,44 @@ public class MessageCounter implements Module {
 					}
 
 					Drawer img = new Drawer(1600, 800);
-					img.drawLineGraph(points);
 					img.drawYLines(0, max, 8, true);
+					img.drawLineGraph(points, max);
 					img.drawXLinesTime(System.currentTimeMillis() - 60000 * points.length, System.currentTimeMillis(),
 							10);
+					channel.sendFile(img.getImage(dir + "/" + event.getGuild().getId() + ".png")).queue();
+
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			if (content.equals("imgod")) {
+				try {
+					String file = Bot.javaRoot + "/onlinecounter/" + event.getGuild().getId() + ".txt";
+					int[] points = readFile(file);
+
+					int max = 0;
+					for (int i = 0; i < points.length; i++) {
+						max = (max < points[i]) ? points[i] : max;
+					}
+
+					int days = points.length / 1440;
+					int[][] points_array = new int[days][];
+
+					for (int i = 0; i < days; i++) {
+						int[] tmp = new int[1440];
+						for (int j = 0; j < 1440; j++) {
+							tmp[j] = points[points.length % 1440 + i * 1440 + j];
+						}
+						points_array[i] = tmp;
+					}
+
+					Drawer img = new Drawer(1600, 800);
+					img.drawYLines(0, max, 8, true);
+					for (int i = 0; i < points_array.length; i++) {
+						img.drawLineGraph(points_array[i], max);
+					}
+					img.drawXLinesTime(System.currentTimeMillis() - 60000 * 1440, System.currentTimeMillis(), 10);
 					channel.sendFile(img.getImage(dir + "/" + event.getGuild().getId() + ".png")).queue();
 
 				} catch (FileNotFoundException e) {
@@ -323,23 +357,21 @@ class Drawer {
 	private int width;
 	private int height;
 	private BufferedImage img_buf;
-	private Graphics2D g2d;
 
 	Drawer(int width, int height) {
 		this.width = width;
 		this.height = height;
 		img_buf = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		g2d = img_buf.createGraphics();
+		// maybe make this optional
+		Graphics2D g2d = img_buf.createGraphics();
+		g2d.setColor(new Color(54, 57, 63));
+		g2d.fillRect(0, 0, width, height);
 	}
 
-	void drawLineGraph(int[] points) {
-		int max = 0;
+	void drawLineGraph(int[] points, int max) {
 		int height_offset = height / 10;
 		int width_offset = width / 10;
-
-		for (int i = 0; i < points.length; i++) {
-			max = (max < points[i]) ? points[i] : max;
-		}
+		Graphics2D g2d = img_buf.createGraphics();
 
 		double height_step = 1.0 * (height - 2 * height_offset) / max;
 		double width_step = 1.0 * (width - 2 * width_offset) / (points.length - 1);

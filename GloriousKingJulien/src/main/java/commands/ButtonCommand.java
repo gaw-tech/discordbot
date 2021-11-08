@@ -578,8 +578,14 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 	@Override
 	public void run_button(ButtonClickEvent event) {
 		InteractionHook ih = event.deferReply().setEphemeral(true).complete();
-		if (event.getMember().getIdLong() == 802472545172455444L // ignore warudo
-				|| event.getMember().getIdLong() == 466292292945313799L) {
+		LinkedList<String> ignore = new LinkedList<>();
+		ignore.add("802472545172455444");//za
+		ignore.add("466292292945313799");//za
+		ignore.add("599179325224386561");//pherb
+		ignore.add("304587987956531201");//pherb
+		ignore.add("814844933813829652");//popopina
+		ignore.add("850353176862916608");//ibot
+		if (ignore.contains(event.getUser().getId())) {
 			return;
 		}
 		claim(event, event.getJDA(), ih);
