@@ -64,8 +64,8 @@ dependencies {
 }
 
 shadowJar {
-   archiveBaseName.set('LameBot')
-   archiveVersion.set('3.14')
+   archiveBaseName.set('Bot')
+   archiveVersion.set('3.15')
 }
 
 apply plugin: 'java'

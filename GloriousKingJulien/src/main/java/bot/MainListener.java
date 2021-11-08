@@ -13,14 +13,12 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
-import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.commands.Command;
 
 public class MainListener extends ListenerAdapter {
 	String myId = Bot.myID;
@@ -32,24 +30,23 @@ public class MainListener extends ListenerAdapter {
 	private static HashMap<String, Module> slash_command_modules = new HashMap<>();
 	private static LinkedList<Module> button_modules = new LinkedList<>();
 	// private static HashMap<String, String> slash_command_ids = new HashMap<>();
-	private static HashMap<String, HashMap<String, String>> slash_command_ids_by_guilds = new HashMap<>(); // guildid
-																											// cmd cmdid
+	// guildid cmd cmdid used to delete commands if module is unloaded
+	private static HashMap<String, HashMap<String, String>> slash_command_ids_by_guilds = new HashMap<>();
+	private static HashMap<String, String> slash_command_ids_global = new HashMap<>(); // cmd cmdid
+	private static boolean slash_global = true; // choose if the slash commands are set up globally or guildwise
 	static ArrayList<String> slash_channels;
 	static JDA jda;
 
 	MainListener(JDA jda) {
-		/*try {
-			jda.awaitReady();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
+		/*
+		 * try { jda.awaitReady(); } catch (InterruptedException e) { // TODO
+		 * Auto-generated catch block e.printStackTrace(); }
+		 */
 		MainListener.jda = jda;
-		/*for (Guild g : jda.getGuilds()) {
-			for (Command c : g.retrieveCommands().complete()) {
-				c.delete().queue();
-			}
-		}*/
+		/*
+		 * for (Guild g : jda.getGuilds()) { for (Command c :
+		 * g.retrieveCommands().complete()) { c.delete().queue(); } }
+		 */
 		slash_channels = Config.get("slash_channels").readStringArray();
 	}
 
@@ -68,17 +65,26 @@ public class MainListener extends ListenerAdapter {
 				reaction_modules.add(instance);
 			}
 			if (instance.has_slash()) {
-				for (String cmd : instance.get_slash().keySet()) {
-					slash_command_modules.put(cmd, instance);
-					for (Guild g : jda.getGuilds()) {
-						HashMap<String, String> command_id = (!slash_command_ids_by_guilds.containsKey(g.getId()))
-								? new HashMap<>()
-								: (slash_command_ids_by_guilds.get(g.getId()) == null) ? new HashMap<>()
-										: slash_command_ids_by_guilds.get(g.getId());
-						g.upsertCommand(cmd, instance.get_slash().get(cmd)).queue(command -> {
-							command_id.put(cmd, command.getId());
+				if (slash_global) {// global slash command setup
+					for (String cmd : instance.get_slash().keySet()) {
+						slash_command_modules.put(cmd, instance);
+						jda.upsertCommand(cmd, instance.get_slash().get(cmd)).queue(command -> {
+							slash_command_ids_global.put(cmd, command.getId());
 						});
+					}
+				} else { // guildwise slash command setup
+					for (String cmd : instance.get_slash().keySet()) {
+						slash_command_modules.put(cmd, instance);
+						for (Guild g : jda.getGuilds()) {
+							HashMap<String, String> command_id = (!slash_command_ids_by_guilds.containsKey(g.getId()))
+									? new HashMap<>()
+									: (slash_command_ids_by_guilds.get(g.getId()) == null) ? new HashMap<>()
+											: slash_command_ids_by_guilds.get(g.getId());
+							g.upsertCommand(cmd, instance.get_slash().get(cmd)).queue(command -> {
+								command_id.put(cmd, command.getId());
+							});
 
+						}
 					}
 				}
 			}
@@ -96,12 +102,10 @@ public class MainListener extends ListenerAdapter {
 			return -1;
 		}
 	}
-	
+
 	/*
-	 * returns:
-	 * -1 if there was an error while loading
-	 * 0 if the module was not loaded
-	 * 1 if the unloading was succesful
+	 * returns: -1 if there was an error while loading 0 if the module was not
+	 * loaded 1 if the unloading was succesful
 	 */
 	public static int unload(String modulename) {
 		try {
@@ -113,17 +117,25 @@ public class MainListener extends ListenerAdapter {
 				short_commands.remove(cmd);
 			}
 			if (instance.has_slash()) {
-				for (Guild g : jda.getGuilds()) {
-					if (slash_command_ids_by_guilds.containsKey(g.getId())) {
-						HashMap<String, String> command_id = slash_command_ids_by_guilds.get(g.getId());
-						for (String cmd : instance.get_slash().keySet()) {
-							g.deleteCommandById(command_id.get(cmd)).queue();
-							command_id.remove(cmd);
+				if (slash_global) {
+					for(String cmd: instance.get_slash().keySet()) {
+						jda.deleteCommandById(slash_command_ids_global.get(cmd)).queue();
+						slash_command_ids_global.remove(cmd);
+						slash_command_modules.remove(cmd);
+					}
+				} else {
+					for (Guild g : jda.getGuilds()) {
+						if (slash_command_ids_by_guilds.containsKey(g.getId())) {
+							HashMap<String, String> command_id = slash_command_ids_by_guilds.get(g.getId());
+							for (String cmd : instance.get_slash().keySet()) {
+								g.deleteCommandById(command_id.get(cmd)).queue();
+								command_id.remove(cmd);
+							}
 						}
 					}
-				}
-				for (String cmd : instance.get_slash().keySet()) {
-					slash_command_modules.remove(cmd);
+					for (String cmd : instance.get_slash().keySet()) {
+						slash_command_modules.remove(cmd);
+					}
 				}
 			}
 			loaded.remove(modulename);
@@ -139,7 +151,7 @@ public class MainListener extends ListenerAdapter {
 		}
 
 	}
-	
+
 	private static void updateSavedModules() {
 		String data = "{";
 		for (String m : loaded.keySet()) {
@@ -190,7 +202,7 @@ public class MainListener extends ListenerAdapter {
 		String content = message.getContentRaw();
 		MessageChannel channel = message.getChannel();
 		if (content.startsWith(prefix)) {
-			//input distribution to the modules
+			// input distribution to the modules
 			String first_argument = (content.substring(prefix.length()).contains(" "))
 					? content.substring(prefix.length()).split(" ")[0]
 					: content.substring(prefix.length());
@@ -333,7 +345,7 @@ public class MainListener extends ListenerAdapter {
 					return;
 				}
 				slash_channels = Config.get("slash_channels").readStringArray();
-				channel.sendMessage("Config reloaded.").queue(msg ->{
+				channel.sendMessage("Config reloaded.").queue(msg -> {
 					msg.delete().queueAfter(15, TimeUnit.SECONDS);
 				});
 			}
@@ -342,8 +354,12 @@ public class MainListener extends ListenerAdapter {
 
 	@Override
 	public void onMessageReactionAdd(MessageReactionAddEvent event) {
-		if(event.getReactionEmote().getName().equals("addQuote")) {
-			System.out.println(event.getUser().getName() + " quoted " + event.getChannel().retrieveMessageById(event.getMessageId()).complete().getContentRaw() + " from: " +  event.getChannel().retrieveMessageById(event.getMessageId()).complete().getAuthor().getName() + " in: " + event.getChannel().getName());
+		if (event.getReactionEmote().getName().equals("addQuote")) {
+			System.out.println(event.getUser().getName() + " quoted "
+					+ event.getChannel().retrieveMessageById(event.getMessageId()).complete().getContentRaw()
+					+ " from: "
+					+ event.getChannel().retrieveMessageById(event.getMessageId()).complete().getAuthor().getName()
+					+ " in: " + event.getChannel().getName());
 		}
 		for (Module module : reaction_modules) {
 			module.run_reaction(event);

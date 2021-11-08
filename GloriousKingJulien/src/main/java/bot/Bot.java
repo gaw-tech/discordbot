@@ -64,14 +64,14 @@ public class Bot {
 			}
 			commands = new MainListener(jda);
 			jda.addEventListener(commands);
-			/*try {
+			try {
 				ArrayList<String> modules = Config.get("modules").readStringArray();
-				for(String module : modules) {
+				for (String module : modules) {
 					MainListener.load(module);
 				}
 			} finally {
-				
-			}*/
+
+			}
 
 		} catch (LoginException e) {
 			System.out.println("what the hek?");
