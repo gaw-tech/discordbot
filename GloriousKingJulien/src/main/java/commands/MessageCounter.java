@@ -35,6 +35,7 @@ import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
+import net.dv8tion.jda.api.events.user.UserTypingEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 public class MessageCounter implements Module {
@@ -83,6 +84,7 @@ public class MessageCounter implements Module {
 				mcl.stop();
 				channel.sendMessage("Let's end this.").queue();
 			}
+			// make image with all messages sent
 			if (content.equals("img")) {
 				try {
 					String file = dir + "/" + event.getGuild().getId() + ".txt";
@@ -105,6 +107,43 @@ public class MessageCounter implements Module {
 					e.printStackTrace();
 				}
 			}
+			// make image with all messages sent but days are stacked
+			if (content.equals("imgd")) {
+				try {
+					String file = dir + "/" + event.getGuild().getId() + ".txt";
+					int[] points = readFile(file);
+					
+					int max = 0;
+					for (int i = 0; i < points.length; i++) {
+						max = (max < points[i]) ? points[i] : max;
+					}
+					
+					int days = points.length / 1440;
+					int[][] points_array = new int[days][];
+
+					for (int i = 0; i < days; i++) {
+						int[] tmp = new int[1440];
+						for (int j = 0; j < 1440; j++) {
+							tmp[j] = points[points.length % 1440 + i * 1440 + j];
+						}
+						points_array[i] = tmp;
+					}
+
+					Drawer img = new Drawer(1600, 800);
+					img.drawYLines(0, max, 8, true);
+					for (int i = 0; i < points_array.length; i++) {
+						img.drawLineGraph(points_array[i], max,
+								new Color(255, 255, 255, (int) (1.0 * 255 / points_array.length * (i + 1))));
+					}
+					img.drawXLinesTime(System.currentTimeMillis() - 60000 * 1440, System.currentTimeMillis(), 10);
+					channel.sendFile(img.getImage(dir + "/" + event.getGuild().getId() + ".png")).queue();
+					
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			// make image with online users
 			if (content.equals("imgo")) {
 				try {
 					String file = Bot.javaRoot + "/onlinecounter/" + event.getGuild().getId() + ".txt";
@@ -127,6 +166,7 @@ public class MessageCounter implements Module {
 					e.printStackTrace();
 				}
 			}
+			// make image with online users but the days are stacked
 			if (content.equals("imgod")) {
 				try {
 					String file = Bot.javaRoot + "/onlinecounter/" + event.getGuild().getId() + ".txt";
@@ -151,7 +191,8 @@ public class MessageCounter implements Module {
 					Drawer img = new Drawer(1600, 800);
 					img.drawYLines(0, max, 8, true);
 					for (int i = 0; i < points_array.length; i++) {
-						img.drawLineGraph(points_array[i], max, new Color(255,255,255,(int)(1.0*255/points_array.length*(i+1))));
+						img.drawLineGraph(points_array[i], max,
+								new Color(255, 255, 255, (int) (1.0 * 255 / points_array.length * (i + 1))));
 					}
 					img.drawXLinesTime(System.currentTimeMillis() - 60000 * 1440, System.currentTimeMillis(), 10);
 					channel.sendFile(img.getImage(dir + "/" + event.getGuild().getId() + ".png")).queue();
@@ -274,6 +315,7 @@ class MessageCounterListener extends ListenerAdapter {
 	ScheduledExecutorService exec = Executors.newScheduledThreadPool(1);
 
 	public void run() {
+		// save messages
 		String filedir = Bot.javaRoot + "/messagecounter";
 		File root = new File(filedir);
 		if (!root.exists()) {
@@ -291,6 +333,7 @@ class MessageCounterListener extends ListenerAdapter {
 			}
 
 		}
+		// save onlineusers
 		filedir = Bot.javaRoot + "/onlinecounter";
 		root = new File(filedir);
 		if (!root.exists()) {
@@ -313,7 +356,6 @@ class MessageCounterListener extends ListenerAdapter {
 				e.printStackTrace();
 			}
 		}
-
 	}
 
 	public void start() {
