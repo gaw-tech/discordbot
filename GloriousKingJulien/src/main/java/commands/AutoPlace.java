@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.imageio.ImageIO;
 
+import bot.Bot;
 import bot.Module;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Emote;
@@ -39,7 +40,8 @@ public class AutoPlace extends ListenerAdapter implements Module {
 	public static int n = 200;
 	public static int m = 1000 / n;
 	static EmoteStorage es = new EmoteStorage();
-	static LinkedList<String> memes = new LinkedList<>();
+	public static LinkedList<String> memes = new LinkedList<>();
+	ListenerAdapter la;
 
 	static Thread pixelThread;
 
@@ -154,7 +156,7 @@ public class AutoPlace extends ListenerAdapter implements Module {
 
 		if (content.startsWith(prefix + "autoplace gray ")) {
 			LinkedList<String> lines = new LinkedList<>();
-			content = content.substring(prefix.length()+15);
+			content = content.substring(prefix.length() + 15);
 			for (int i = Integer.parseInt(content); i < 1000; i++) {
 				for (int j = 0; j < 1000; j++) {
 					lines.add(".place setpixel " + i + " " + j + " #36393f");
@@ -163,7 +165,21 @@ public class AutoPlace extends ListenerAdapter implements Module {
 			running = true;
 			pixelThread = new Thread(new PlaceRunnable(lines, channel));
 			pixelThread.start();
-			
+
+		}
+
+		if (content.startsWith(prefix + "autoplace andri")) {
+			if (la != null && running) {
+				Bot.jda.removeEventListener(la);
+				running = false;
+				Bot.jda.cancelRequests();
+				la = null;
+				channel.sendMessage("lessgo").queue();
+			} else {
+				la = new APLA();
+				Bot.jda.addEventListener(la);
+				channel.sendMessage("nono").queue();
+			}
 		}
 
 	}
@@ -232,6 +248,11 @@ public class AutoPlace extends ListenerAdapter implements Module {
 		bot.Bot.jda.removeEventListener(this);
 		running = false;
 		pixelThread.interrupt();
+		if (la != null) {
+			Bot.jda.removeEventListener(la);
+			Bot.jda.cancelRequests();
+			la = null;
+		}
 	}
 
 	private static WritableRaster normalizeRaster(Raster in) {
@@ -356,4 +377,25 @@ class PlaceRunnable implements Runnable {
 		System.out.println("PIXEL THREAD STOPPED");
 	}
 
+}
+
+class APLA extends ListenerAdapter {
+
+	@Override
+	public void onMessageReceived(MessageReceivedEvent event) {
+		if (event.getAuthor().getId().equals("817846061347242026")) {
+			String content = event.getMessage().getContentRaw();
+			if (content.toLowerCase().startsWith(".place setpixel")) {
+				String[] split = content.split(" ");
+				String nr = split[4];
+				String x = split[2];
+				String y = split[3];
+				Color color = new Color(Integer.valueOf(nr.substring(1, 3), 16),
+						Integer.valueOf(nr.substring(3, 5), 16), Integer.valueOf(nr.substring(5, 7), 16));
+				int sum = (color.getRed() + color.getGreen() + color.getBlue()) / 3;
+				event.getMessage()
+						.reply(".place setpixel " + x + " " + y + " " + String.format("#%02x%02x%02x", sum, sum, sum)).queue();
+			}
+		}
+	};
 }
