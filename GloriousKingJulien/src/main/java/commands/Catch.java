@@ -180,35 +180,28 @@ public class Catch extends ListenerAdapter implements Module {
 
 			// send the new catch message
 			if (currentCgame.itemholder == 0) {
-				channel.sendMessage(
+				Message tmp = channel.sendMessage(
 						"Nobody has stolen the item yet. Feel free to steal it by adding a reaction to this message.")
-						.queue((msg) -> {
-							// updates the oldmessage of the game. Its kinda wierd because i can't the
-							// currenBgame variable in this block.
-							CatchGame cg = servers.get(event.getGuild().getIdLong());
-							if (cg.oldmessage != null)
-								cg.oldmessage.delete().queue();
-							cg.oldmessage = msg;
-						});
+						.complete();
+				if (currentCgame.oldmessage != null)
+					currentCgame.oldmessage.delete().complete();
+				currentCgame.oldmessage = tmp;
 			} else {
 				if (currentCgame.cooldown > System.currentTimeMillis() - currentCgame.cooldownstart) {
-					channel.sendMessage("The game is on cooldown for another "
+					Message tmp = channel.sendMessage("The game is on cooldown for another "
 							+ (currentCgame.cooldown - (System.currentTimeMillis() - currentCgame.cooldownstart))
 									/ 1000.0
-							+ " seconds.\n" + currentCgame.getTag(false) + " has the thing.").queue(msg -> {
-								CatchGame cg = servers.get(event.getGuild().getIdLong());
-								if (cg.oldmessage != null)
-									cg.oldmessage.delete().queue();
-								cg.oldmessage = msg;
-							});
+							+ " seconds.\n" + currentCgame.getTag(false) + " has the thing.").complete();
+					if (currentCgame.oldmessage != null)
+						currentCgame.oldmessage.delete().complete();
+					currentCgame.oldmessage = tmp;
 				} else {
-					channel.sendMessage("Feel free to steal the item by adding a reaction to this message.")
-							.queue(msg -> {
-								CatchGame cg = servers.get(event.getGuild().getIdLong());
-								if (cg.oldmessage != null)
-									cg.oldmessage.delete().queue();
-								cg.oldmessage = msg;
-							});
+					Message tmp = channel
+							.sendMessage("Feel free to steal the item by adding a reaction to this message.")
+							.complete();
+					if (currentCgame.oldmessage != null)
+						currentCgame.oldmessage.delete().complete();
+					currentCgame.oldmessage = tmp;
 				}
 			}
 			event.getMessage().delete().queue();
