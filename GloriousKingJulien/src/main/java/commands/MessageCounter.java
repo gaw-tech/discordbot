@@ -112,12 +112,12 @@ public class MessageCounter implements Module {
 				try {
 					String file = dir + "/" + event.getGuild().getId() + ".txt";
 					int[] points = readFile(file);
-					
+
 					int max = 0;
 					for (int i = 0; i < points.length; i++) {
 						max = (max < points[i]) ? points[i] : max;
 					}
-					
+
 					int days = points.length / 1440;
 					int[][] points_array = new int[days][];
 
@@ -137,7 +137,7 @@ public class MessageCounter implements Module {
 					}
 					img.drawXLinesTime(System.currentTimeMillis() - 60000 * 1440, System.currentTimeMillis(), 10);
 					channel.sendFile(img.getImage(dir + "/" + event.getGuild().getId() + ".png")).queue();
-					
+
 				} catch (FileNotFoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -312,6 +312,7 @@ public class MessageCounter implements Module {
 class MessageCounterListener extends ListenerAdapter {
 
 	HashMap<String, Integer> counter = new HashMap<>();
+	HashMap<String, Integer[]> usermessagescounter = new HashMap<>(); // userid. [messages charcount]
 	ScheduledExecutorService exec = Executors.newScheduledThreadPool(1);
 
 	public void run() {
@@ -333,6 +334,57 @@ class MessageCounterListener extends ListenerAdapter {
 			}
 
 		}
+		// read and save messages by member
+		long timer = System.currentTimeMillis();
+		File mc = new File(filedir + "/messagesbyuser.txt");
+		if (!mc.exists()) {
+			try {
+				mc.createNewFile();
+			} catch (IOException e) {
+				System.out.println("Tried to create messagesbyuser.txt file but failed.");
+				e.printStackTrace();
+			}
+		}
+		try {
+			Scanner scanner = new Scanner(mc);
+			HashMap<String, Integer[]> read = new HashMap<>();
+			while (scanner.hasNext()) {
+				String id = scanner.next();
+				int msgcount = scanner.nextInt();
+				int charcount = scanner.nextInt();
+				Integer[] numbers = new Integer[2];
+				numbers[0] = msgcount;
+				numbers[1] = charcount;
+				read.put(id, numbers);
+			}
+			for (String id : usermessagescounter.keySet()) {
+				Integer[] numbers = new Integer[2];
+				if (read.containsKey(id)) {
+					numbers = read.get(id);
+					Integer[] add = usermessagescounter.get(id);
+					numbers[0] += add[0].intValue();
+					numbers[1] += add[1];
+				} else {
+					numbers = usermessagescounter.get(id);
+				}
+				read.put(id, numbers);
+			}
+			usermessagescounter = new HashMap<>();
+			FileWriter fr = new FileWriter(mc);
+			for (String id : read.keySet()) {
+				Integer[] numbers = read.get(id);
+				fr.append(id + " " + numbers[0] + " " + numbers[1] + "\n");
+			}
+			scanner.close();
+			fr.close();
+		} catch (FileNotFoundException e1) {
+			System.out.println("couldnt read and thus not save userwise message counts");
+			e1.printStackTrace();
+		} catch (IOException e) {
+			System.out.println("Error while writing userwise message counts");
+			e.printStackTrace();
+		}
+		System.out.println("Usewise save took " + (System.currentTimeMillis() - timer) + " ms.");
 		// save onlineusers
 		filedir = Bot.javaRoot + "/onlinecounter";
 		root = new File(filedir);
@@ -368,6 +420,17 @@ class MessageCounterListener extends ListenerAdapter {
 
 	@Override
 	public void onMessageReceived(MessageReceivedEvent event) {
+		String userid = event.getAuthor().getId();
+		if (usermessagescounter.containsKey(userid)) {
+			Integer[] numbers = usermessagescounter.get(userid);
+			numbers[0] += 1;
+			numbers[1] += event.getMessage().getContentRaw().length();
+		} else {
+			Integer[] numbers = new Integer[2];
+			numbers[0] = 1;
+			numbers[1] = event.getMessage().getContentRaw().length();
+			usermessagescounter.put(userid, numbers);
+		}
 		if (event.getAuthor().isBot()) {
 			return;
 		}
