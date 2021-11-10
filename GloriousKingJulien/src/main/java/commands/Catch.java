@@ -112,11 +112,10 @@ public class Catch extends ListenerAdapter implements Module {
 		}
 
 		// cooldown is still active or self steal
-		event.getChannel().retrieveMessageById(event.getMessageId()).queue(msg -> {
-			if (msg != null && msg.getAuthor().getIdLong() == servers.get(event.getGuild().getIdLong()).itemholder) {
-				messagematch(event);
-			}
-		});
+		Message msg = event.getChannel().retrieveMessageById(event.getMessageId()).complete();
+		if (msg != null && msg.getAuthor().getIdLong() == servers.get(event.getGuild().getIdLong()).itemholder) {
+			messagematch(event);
+		}
 
 		// steal from bot
 		// fist check if the reaction was from the old message and if so check if the
