@@ -238,7 +238,7 @@ public class MessageCounter implements Module {
 					Drawer img = new Drawer(1600, 800);
 					img.drawYLines(min_y, max_y, 10, true);
 					img.drawScatter(labels, x, y, min_x, min_y, max_x, max_y);
-					img.drawXLines(min_x, max_x, 10, false);
+					img.drawXLines(min_x, max_x, 10, true);
 					channel.sendFile(img.getImage(dir + "/" + event.getGuild().getId() + ".png")).queue();
 				} catch (FileNotFoundException e) {
 					// TODO Auto-generated catch block
@@ -540,9 +540,9 @@ class Drawer {
 		g2d.setColor(new Color(83, 88, 97));
 
 		double height_step = (1.0 * height - 2 * height_offset) / n;
-		for (int i = 1; i <= n + 1; i++) {
-			g2d.drawLine((int) (width_offset), (int) (height - i * height_step), (int) (width - width_offset),
-					(int) (height - i * height_step));
+		for (int i = 1; i <= n; i++) {
+			g2d.drawLine((int) (width_offset), (int) (height - height_offset - i * height_step),
+					(int) (width - width_offset), (int) (height - height_offset - i * height_step));
 		}
 		if (labeled) {
 			double labelstep = ((1.0 * max - min) / n);
@@ -566,8 +566,12 @@ class Drawer {
 					(int) (width_offset + i * width_step), (int) (height - height_offset));
 		}
 
+		double labelstep = (1.0 * max - min) / n;
 		if (labeled) {
-			// TODO
+			for (int i = 0; i <= n; i++) {
+				g2d.drawString("" + ((int) (min + labelstep * (n - i))), (int) (width - width_offset - i * width_step),
+						(int) (height - height_offset / 2));
+			}
 		}
 
 	}
