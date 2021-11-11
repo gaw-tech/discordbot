@@ -202,6 +202,50 @@ public class MessageCounter implements Module {
 					e.printStackTrace();
 				}
 			}
+			// scatter userwise message thingy
+			if (content.equals("scat")) {
+				String filedir = Bot.javaRoot + "/messagecounter/messagesbyuser.txt";
+				File file = new File(filedir);
+				try {
+					Scanner scanner = new Scanner(file);
+					ArrayList<String> id_list = new ArrayList<>();
+					ArrayList<Integer> messages_list = new ArrayList<>();
+					ArrayList<Integer> char_list = new ArrayList<>();
+					while (scanner.hasNext()) {
+						id_list.add(scanner.next());
+						messages_list.add(scanner.nextInt());
+						char_list.add(scanner.nextInt());
+					}
+					int len = id_list.size();
+					String[] labels = new String[len];
+					int[] x = new int[len];
+					int[] y = new int[len];
+					int max_x = Integer.MIN_VALUE;
+					int max_y = Integer.MIN_VALUE;
+					int min_x = Integer.MAX_VALUE;
+					int min_y = Integer.MAX_VALUE;
+					for (int i = 0; i < len; i++) {
+						labels[i] = event.getJDA().getUserById(id_list.get(i)).getName();
+						int nrx = messages_list.get(i);
+						int nry = char_list.get(i);
+						max_x = (max_x < nrx) ? nrx : max_x;
+						max_y = (max_y < nry) ? nry : max_y;
+						min_x = (min_x > nrx) ? nrx : min_x;
+						min_y = (min_y > nry) ? nry : min_y;
+						x[i] = nrx;
+						y[i] = nry;
+					}
+					Drawer img = new Drawer(1600, 800);
+					img.drawYLines(min_y, max_y, 10, true);
+					img.drawScatter(labels, x, y, min_x, min_y, max_x, max_y);
+					img.drawXLines(min_x, max_x, 10, false);
+					channel.sendFile(img.getImage(dir + "/" + event.getGuild().getId() + ".png")).queue();
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+			}
 			message.delete().queue();
 		}
 	}
@@ -335,7 +379,6 @@ class MessageCounterListener extends ListenerAdapter {
 
 		}
 		// read and save messages by member
-		long timer = System.currentTimeMillis();
 		File mc = new File(filedir + "/messagesbyuser.txt");
 		if (!mc.exists()) {
 			try {
@@ -384,7 +427,6 @@ class MessageCounterListener extends ListenerAdapter {
 			System.out.println("Error while writing userwise message counts");
 			e.printStackTrace();
 		}
-		System.out.println("Usewise save took " + (System.currentTimeMillis() - timer) + " ms.");
 		// save onlineusers
 		filedir = Bot.javaRoot + "/onlinecounter";
 		root = new File(filedir);
@@ -420,6 +462,9 @@ class MessageCounterListener extends ListenerAdapter {
 
 	@Override
 	public void onMessageReceived(MessageReceivedEvent event) {
+		if (event.getAuthor().isBot()) {
+			return;
+		}
 		String userid = event.getAuthor().getId();
 		if (usermessagescounter.containsKey(userid)) {
 			Integer[] numbers = usermessagescounter.get(userid);
@@ -430,9 +475,6 @@ class MessageCounterListener extends ListenerAdapter {
 			numbers[0] = 1;
 			numbers[1] = event.getMessage().getContentRaw().length();
 			usermessagescounter.put(userid, numbers);
-		}
-		if (event.getAuthor().isBot()) {
-			return;
 		}
 		String guildid = event.getGuild().getId();
 		if (counter.containsKey(guildid)) {
@@ -497,7 +539,7 @@ class Drawer {
 		Graphics2D g2d = img_buf.createGraphics();
 		g2d.setColor(new Color(83, 88, 97));
 
-		double height_step = 1.0 * (height - 2 * height_offset) / n;
+		double height_step = (1.0 * height - 2 * height_offset) / n;
 		for (int i = 1; i <= n + 1; i++) {
 			g2d.drawLine((int) (width_offset), (int) (height - i * height_step), (int) (width - width_offset),
 					(int) (height - i * height_step));
@@ -509,6 +551,25 @@ class Drawer {
 						(int) (height - height_offset - height_step * i));
 			}
 		}
+	}
+
+	void drawXLines(int min, int max, int n, boolean labeled) {
+		int height_offset = height / 10;
+		int width_offset = width / 10;
+		double width_step = (1.0 * width - 2 * width_offset) / n;
+
+		Graphics2D g2d = img_buf.createGraphics();
+		g2d.setColor(new Color(83, 88, 97));
+
+		for (int i = 1; i < n; i++) {
+			g2d.drawLine((int) (width_offset + i * width_step), (int) (height_offset),
+					(int) (width_offset + i * width_step), (int) (height - height_offset));
+		}
+
+		if (labeled) {
+			// TODO
+		}
+
 	}
 
 	void drawXLinesTime(long min, long max, int n) {
@@ -534,6 +595,19 @@ class Drawer {
 					(int) (width - width_offset - i * width_step), (int) (height - height_offset / 2));
 			g2d.drawString(dt.toString(DateTimeFormat.forPattern("yyyy")),
 					(int) (width - width_offset - i * width_step), (int) (height - height_offset / 2) - 10);
+		}
+	}
+
+	void drawScatter(String[] label, int[] x, int[] y, int min_x, int min_y, int max_x, int max_y) {
+		int height_offset = height / 10;
+		int width_offset = width / 10;
+		double width_step = (1.0 * width - 2 * width_offset) / (max_x - min_x);
+		double height_step = (1.0 * height - 2 * height_offset) / (max_y - min_y);
+		Graphics2D g2d = img_buf.createGraphics();
+
+		for (int i = 0; i < label.length; i++) {
+			g2d.drawString(label[i], (int) (width_offset + (x[i] - min_x) * width_step),
+					(int) (height - height_offset - (y[i] - min_y) * height_step));
 		}
 	}
 
