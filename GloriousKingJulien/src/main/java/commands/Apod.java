@@ -15,6 +15,7 @@ import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonObject;
 import com.github.cliftonlabs.json_simple.Jsoner;
 
+import bot.Config;
 import bot.Module;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
@@ -28,6 +29,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 public class Apod extends ListenerAdapter implements Module {
 	String topname = "APOD";
+	String nasaapikey = Config.get("nasaapikey").readString(); //we assume that confic is loaded here which might not be to smart
 
 	@Override
 	public void run_message(MessageReceivedEvent event) {
@@ -40,7 +42,7 @@ public class Apod extends ListenerAdapter implements Module {
 		if (content.equals(prefix + "apod")) {
 			try {
 				URL url;
-				url = new URL("https://api.nasa.gov/planetary/apod?api_key=" + bot.Bot.nasaapikey);
+				url = new URL("https://api.nasa.gov/planetary/apod?api_key=" + nasaapikey);
 				HttpURLConnection con = (HttpURLConnection) url.openConnection();
 				con.setRequestProperty("accept", "application/json");
 				BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
