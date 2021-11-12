@@ -31,6 +31,7 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -225,7 +226,8 @@ public class MessageCounter implements Module {
 					int min_x = Integer.MAX_VALUE;
 					int min_y = Integer.MAX_VALUE;
 					for (int i = 0; i < len; i++) {
-						labels[i] = event.getJDA().getUserById(id_list.get(i)).getName();
+						User user = event.getJDA().getUserById(id_list.get(i));
+						labels[i] = (user != null) ? user.getName() : "null";
 						int nrx = messages_list.get(i);
 						int nry = char_list.get(i);
 						max_x = (max_x < nrx) ? nrx : max_x;
@@ -236,10 +238,11 @@ public class MessageCounter implements Module {
 						y[i] = nry;
 					}
 					Drawer img = new Drawer(1600, 800);
-					img.drawYLines(min_y, max_y, 10, true);
-					img.drawScatter(labels, x, y, min_x, min_y, max_x, max_y);
-					img.drawXLines(min_x, max_x, 10, true);
+					img.drawYLinesLog(min_y, max_y, true);
+					img.drawScatterLog(labels, x, y, min_x, min_y, max_x, max_y);
+					img.drawXLinesLog(min_x, max_x, true);
 					channel.sendFile(img.getImage(dir + "/" + event.getGuild().getId() + ".png")).queue();
+					scanner.close();
 				} catch (FileNotFoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -553,6 +556,28 @@ class Drawer {
 		}
 	}
 
+	void drawYLinesLog(int min, int max, boolean labeled) {
+		int height_offset = height / 10;
+		int width_offset = width / 10;
+		double height_step = (1.0 * height - 2 * height_offset) / (Math.log10(max - min));
+		int start = min / 10 * 10;
+		if (start == 0)
+			start = 1;
+		start = Math.abs(start);
+
+		Graphics2D g2d = img_buf.createGraphics();
+		g2d.setColor(new Color(83, 88, 97));
+
+		while (start < max) {
+			g2d.drawLine((int) (width_offset), (int) (height_offset + (Math.log10(start)) * height_step),
+					(int) (width - width_offset), (int) (height_offset + (Math.log10(start)) * height_step));
+			if (labeled)
+				g2d.drawString("" + start, (int) (width_offset - width_offset / 5),
+						(int) (height - height_offset - Math.log10(start) * height_step));
+			start *= 10;
+		}
+	}
+
 	void drawXLines(int min, int max, int n, boolean labeled) {
 		int height_offset = height / 10;
 		int width_offset = width / 10;
@@ -574,6 +599,28 @@ class Drawer {
 			}
 		}
 
+	}
+
+	void drawXLinesLog(int min, int max, boolean labeled) {
+		int height_offset = height / 10;
+		int width_offset = width / 10;
+		double width_step = (1.0 * width - 2 * width_offset) / (Math.log10(max - min));
+		int start = min / 10 * 10;
+		if (start == 0)
+			start = 1;
+		start = Math.abs(start);
+
+		Graphics2D g2d = img_buf.createGraphics();
+		g2d.setColor(new Color(83, 88, 97));
+
+		while (start < max) {
+			g2d.drawLine((int) (width_offset + (Math.log10(start)) * width_step), (int) (height_offset),
+					(int) (width_offset + (Math.log10(start)) * width_step), (int) (height - height_offset));
+			if (labeled)
+				g2d.drawString("" + start, (int) (width_offset + Math.log10(start) * width_step),
+						(int) (height - height_offset / 2));
+			start *= 10;
+		}
 	}
 
 	void drawXLinesTime(long min, long max, int n) {
@@ -612,6 +659,19 @@ class Drawer {
 		for (int i = 0; i < label.length; i++) {
 			g2d.drawString(label[i], (int) (width_offset + (x[i] - min_x) * width_step),
 					(int) (height - height_offset - (y[i] - min_y) * height_step));
+		}
+	}
+
+	void drawScatterLog(String[] label, int[] x, int[] y, int min_x, int min_y, int max_x, int max_y) {
+		int height_offset = height / 10;
+		int width_offset = width / 10;
+		double width_step = (1.0 * width - 2 * width_offset) / (Math.log10(max_x - min_x));
+		double height_step = (1.0 * height - 2 * height_offset) / (Math.log10(max_y - min_y));
+		Graphics2D g2d = img_buf.createGraphics();
+
+		for (int i = 0; i < label.length; i++) {
+			g2d.drawString(label[i], (int) (width_offset + Math.log10(x[i] - min_x) * width_step),
+					(int) (height - height_offset - Math.log10(y[i] - min_y) * height_step));
 		}
 	}
 
