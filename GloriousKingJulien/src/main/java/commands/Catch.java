@@ -31,6 +31,7 @@ import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 public class Catch extends ListenerAdapter implements Module {
@@ -183,7 +184,11 @@ public class Catch extends ListenerAdapter implements Module {
 						"Nobody has stolen the item yet. Feel free to steal it by adding a reaction to this message.")
 						.complete();
 				if (currentCgame.oldmessage != null)
-					currentCgame.oldmessage.delete().complete();
+					try {
+						currentCgame.oldmessage.delete().complete();
+					} catch (ErrorResponseException e) {
+
+					}
 				currentCgame.oldmessage = tmp;
 			} else {
 				if (currentCgame.cooldown > System.currentTimeMillis() - currentCgame.cooldownstart) {
@@ -192,14 +197,22 @@ public class Catch extends ListenerAdapter implements Module {
 									/ 1000.0
 							+ " seconds.\n" + currentCgame.getTag(false) + " has the thing.").complete();
 					if (currentCgame.oldmessage != null)
-						currentCgame.oldmessage.delete().complete();
+						try {
+							currentCgame.oldmessage.delete().complete();
+						} catch (ErrorResponseException e) {
+
+						}
 					currentCgame.oldmessage = tmp;
 				} else {
 					Message tmp = channel
 							.sendMessage("Feel free to steal the item by adding a reaction to this message.")
 							.complete();
 					if (currentCgame.oldmessage != null)
-						currentCgame.oldmessage.delete().complete();
+						try {
+							currentCgame.oldmessage.delete().complete();
+						} catch (ErrorResponseException e) {
+
+						}
 					currentCgame.oldmessage = tmp;
 				}
 			}
