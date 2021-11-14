@@ -18,6 +18,8 @@ import java.util.concurrent.TimeUnit;
 
 import javax.imageio.ImageIO;
 
+import org.joda.time.DateTime;
+
 import bot.Bot;
 import bot.Module;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -394,7 +396,9 @@ class APLA extends ListenerAdapter {
 						Integer.valueOf(nr.substring(3, 5), 16), Integer.valueOf(nr.substring(5, 7), 16));
 				int sum = (color.getRed() + color.getGreen() + color.getBlue()) / 3;
 				event.getMessage()
-						.reply(".place setpixel " + x + " " + y + " " + String.format("#%02x%02x%02x", sum, sum, sum)).queue();
+						.reply(".place setpixel " + x + " " + y + " " + String.format("#%02x%02x%02x", sum, sum, sum)
+								+ " | <t:" + event.getMessage().getTimeCreated().toEpochSecond() + ":R>")
+						.queue();
 			}
 		}
 	};
