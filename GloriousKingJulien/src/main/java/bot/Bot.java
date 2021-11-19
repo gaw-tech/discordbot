@@ -1,9 +1,12 @@
 package bot;
 
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 import javax.security.auth.login.LoginException;
 
@@ -18,10 +21,8 @@ public class Bot {
 	public static String prefix = "?";
 	public static String myID;
 	public static JDA jda;
-	public static String nasaapikey;
 	private static String token;
 	public static String path;
-	public static String javaRoot;
 
 	public static void main(String[] args) {
 		// get path of the jar
@@ -35,17 +36,38 @@ public class Bot {
 
 		try {
 			Config.load();
-		} catch (FileNotFoundException e1) {
-			System.out.println("Config file could not be loaded. File not found.");
-			e1.printStackTrace();
-			return;
+		} catch (FileNotFoundException e) {
+			System.out.println("Config file could not be loaded. File not found in " + path + "/config.txt");
+			File file = Config.newFileRoutine();
+			if (file != null) {
+				System.out.println("Botowner id:");
+				Scanner scanner = new Scanner(System.in);
+				while (!scanner.hasNextLong()) {
+					System.out.println("id must be a long");
+					scanner.nextLine();
+				}
+				String id = scanner.nextLong() + "";
+				Config.setLine(ConfigType.STRING, "myID", '"' + id + '"');
+				System.out.println("Bot token:");
+				String token = scanner.next();
+				Config.setLine(ConfigType.STRING, "token", '"' + token + '"');
+				Config.setLine(ConfigType.ARRAY_STRING, "slash_channels", "{}");
+				try {
+					Config.save();
+				} catch (IOException e1) {
+					System.out.println("Couldn't save generated config.");
+					e1.printStackTrace();
+				}
+			} else {
+				System.out.println("I don't know what to do now.");
+				e.printStackTrace();
+				return;
+			}
 		}
 		MainListener commands;
 		try {
 			token = Config.get("token").readString();
 			myID = Config.get("myID").readString();
-			nasaapikey = Config.get("nasaapikey").readString();
-			javaRoot = Config.get("javaRoot").readString();
 
 			jda = JDABuilder
 					.createDefault(token, GatewayIntent.GUILD_PRESENCES, GatewayIntent.GUILD_MESSAGES,

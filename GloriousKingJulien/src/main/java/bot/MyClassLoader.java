@@ -13,6 +13,7 @@ import javax.tools.ToolProvider;
 
 public class MyClassLoader extends ClassLoader {
 	private String path = Bot.path;
+	private String javaRoot = path +"/java";
 
 	public MyClassLoader(ClassLoader parent) {
 		super(parent);
@@ -40,7 +41,7 @@ public class MyClassLoader extends ClassLoader {
 			// Save source in .java file.
 			//File root = new File("/home/pi/java");
 			//File root = new File("C:\\java"); // On Windows running on C:\, this is C:\java.
-			File root = new File(Bot.javaRoot);
+			File root = new File(javaRoot);
 			if(!root.exists()) {
 				root.mkdir();
 			}

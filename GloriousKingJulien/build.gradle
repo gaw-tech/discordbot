@@ -65,7 +65,8 @@ dependencies {
 
 shadowJar {
    archiveBaseName.set('Bot')
-   archiveVersion.set('3.15')
+   archiveVersion.set('3.16')
+   exclude 'src.main.java.commands'
 }
 
 apply plugin: 'java'
