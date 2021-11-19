@@ -134,12 +134,18 @@ public class Catch extends ListenerAdapter implements Module {
 		currentCgame.cooldownstart = System.currentTimeMillis();
 		currentCgame.itemholder = event.getUserIdLong();
 		currentCgame.itemholdertag = event.getUser().getAsTag();
-		currentCgame.oldmessage
-				.editMessage("Someone stole the item, the cooldown is " + currentCgame.cooldown / 1000.0 + " seconds.\n"
+		try {
+			currentCgame.oldmessage.delete().complete();
+		} finally {
+
+		}
+		currentCgame.channel
+				.sendMessage("Someone stole the item, the cooldown is " + currentCgame.cooldown / 1000.0 + " seconds.\n"
 						+ currentCgame.getTag(true) + " has the thing.")
 				.queueAfter(new Random().nextInt(10), TimeUnit.SECONDS, (msg) -> {
 					servers.get(event.getGuild().getIdLong()).oldmessage = msg;
 				});
+		//send message to log 
 		((MessageChannel) event.getJDA().getGuildChannelById(897075459739775027L))
 				.sendMessage(event.getUser().getAsMention() + "(" + event.getUser().getName() + ", "
 						+ event.getMember().getNickname() + ") stole the thing.")
