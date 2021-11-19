@@ -397,8 +397,8 @@ class APLA extends ListenerAdapter {
 				int sum = (color.getRed() + color.getGreen() + color.getBlue()) / 3;
 				event.getMessage()
 						.reply(".place setpixel " + x + " " + y + " " + String.format("#%02x%02x%02x", sum, sum, sum)
-								+ " | <t:" + event.getMessage().getTimeCreated().toEpochSecond() + ":R>")
-						.queue();
+								+ " | <t:" + (1800+event.getMessage().getTimeCreated().toEpochSecond()) + ":R>")
+						.queueAfter(30, TimeUnit.MINUTES);
 			}
 		}
 	};
