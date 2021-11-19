@@ -36,7 +36,6 @@ public class MyClassLoader extends ClassLoader {
 			while (scanner.hasNext()) {
 				source = source + scanner.nextLine() + "\n";
 			}
-			System.out.println(source);
 
 			// Save source in .java file.
 			//File root = new File("/home/pi/java");
