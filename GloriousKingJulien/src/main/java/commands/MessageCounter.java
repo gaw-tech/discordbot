@@ -40,7 +40,8 @@ public class MessageCounter implements Module {
 	String topname = "MessageCounter";
 	MessageCounterListener mcl;
 	JDA jda;
-	private String dir = Bot.javaRoot + "/messagecounter";
+	private String dir = Bot.path + "/messagecounter";
+	private String path = Bot.path;
 	private boolean running = false;
 
 	public MessageCounter() {
@@ -144,7 +145,7 @@ public class MessageCounter implements Module {
 			// make image with online users
 			if (content.equals("imgo")) {
 				try {
-					String file = Bot.javaRoot + "/onlinecounter/" + event.getGuild().getId() + ".txt";
+					String file = path + "/onlinecounter/" + event.getGuild().getId() + ".txt";
 					int[] points = readFile(file);
 
 					int max = 0;
@@ -167,7 +168,7 @@ public class MessageCounter implements Module {
 			// make image with online users but the days are stacked
 			if (content.equals("imgod")) {
 				try {
-					String file = Bot.javaRoot + "/onlinecounter/" + event.getGuild().getId() + ".txt";
+					String file = path + "/onlinecounter/" + event.getGuild().getId() + ".txt";
 					int[] points = readFile(file);
 
 					int max = 0;
@@ -202,7 +203,7 @@ public class MessageCounter implements Module {
 			}
 			// scatter userwise message thingy
 			if (content.equals("scat")) {
-				String filedir = Bot.javaRoot + "/messagecounter/messagesbyuser.txt";
+				String filedir = path + "/messagecounter/messagesbyuser.txt";
 				File file = new File(filedir);
 				try {
 					Scanner scanner = new Scanner(file);
@@ -354,6 +355,7 @@ public class MessageCounter implements Module {
 }
 
 class MessageCounterListener extends ListenerAdapter {
+	private String path = Bot.path;
 
 	HashMap<String, Integer> counter = new HashMap<>();
 	HashMap<String, Integer[]> usermessagescounter = new HashMap<>(); // userid. [messages charcount]
@@ -361,7 +363,7 @@ class MessageCounterListener extends ListenerAdapter {
 
 	public void run() {
 		// save messages
-		String filedir = Bot.javaRoot + "/messagecounter";
+		String filedir = path + "/messagecounter";
 		File root = new File(filedir);
 		if (!root.exists()) {
 			root.mkdir();
@@ -428,7 +430,7 @@ class MessageCounterListener extends ListenerAdapter {
 			e.printStackTrace();
 		}
 		// save onlineusers
-		filedir = Bot.javaRoot + "/onlinecounter";
+		filedir = path + "/onlinecounter";
 		root = new File(filedir);
 		if (!root.exists()) {
 			root.mkdir();
