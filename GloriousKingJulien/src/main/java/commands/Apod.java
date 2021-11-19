@@ -125,7 +125,7 @@ public class Apod extends ListenerAdapter implements Module {
 			event.deferReply();
 			try {
 				URL url;
-				url = new URL("https://api.nasa.gov/planetary/apod?api_key=" + bot.Bot.nasaapikey);
+				url = new URL("https://api.nasa.gov/planetary/apod?api_key=" + nasaapikey);
 				HttpURLConnection con = (HttpURLConnection) url.openConnection();
 				con.setRequestProperty("accept", "application/json");
 				BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
