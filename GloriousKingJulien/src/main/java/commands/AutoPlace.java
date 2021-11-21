@@ -18,8 +18,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.imageio.ImageIO;
 
-import org.joda.time.DateTime;
-
 import bot.Bot;
 import bot.Module;
 import net.dv8tion.jda.api.EmbedBuilder;
