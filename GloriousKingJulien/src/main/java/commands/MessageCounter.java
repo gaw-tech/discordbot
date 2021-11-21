@@ -568,8 +568,8 @@ class Drawer {
 		g2d.setColor(new Color(83, 88, 97));
 
 		while (start < max) {
-			g2d.drawLine((int) (width_offset), (int) (height_offset + (Math.log10(start)) * height_step),
-					(int) (width - width_offset), (int) (height_offset + (Math.log10(start)) * height_step));
+			g2d.drawLine((int) (width_offset), (int) (height - height_offset - (Math.log10(start)) * height_step),
+					(int) (width - width_offset), (int) (height - height_offset - (Math.log10(start)) * height_step));
 			if (labeled)
 				g2d.drawString("" + start, (int) (width_offset - width_offset / 5),
 						(int) (height - height_offset - Math.log10(start) * height_step));
