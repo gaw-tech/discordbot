@@ -30,6 +30,9 @@ repositories {
       name 'm2-dv8tion'
       url 'https://m2.dv8tion.net/releases'
     }
+    maven {
+      url 'https://jitpack.io'
+    }
 }
 
 dependencies {
@@ -59,13 +62,18 @@ dependencies {
     compile 'org.codehaus.plexus:plexus-utils:2.0.6'
     
     implementation 'com.github.cliftonlabs:json-simple:3.1.0'
-
+    compile 'com.github.sealedtx:java-youtube-downloader:3.0.2'
+    implementation 'com.github.sealedtx:java-youtube-downloader:3.0.2'
+    
+    compile 'net.bramp.ffmpeg:ffmpeg:0.6.2'
 
 }
 
+
+
 shadowJar {
    archiveBaseName.set('Bot')
-   archiveVersion.set('3.16')
+   archiveVersion.set('3.20')
    exclude 'src.main.java.commands'
 }
 
