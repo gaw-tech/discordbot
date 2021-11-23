@@ -190,8 +190,11 @@ public class MessageCounter implements Module {
 					Drawer img = new Drawer(1600, 800);
 					img.drawYLines(0, max, 8, true);
 					for (int i = 0; i < points_array.length; i++) {
-						img.drawLineGraph(points_array[i], max,
-								new Color(255, 255, 255, (int) (1.0 * 255 / points_array.length * (i + 1))));
+						Color color = new Color(255, 255, 255, (int) (1.0 * 255 / points_array.length * (i + 1)));
+						if (i == points_array.length - 1) {
+							color = new Color(255, 0, 0);
+						}
+						img.drawLineGraph(points_array[i], max, color);
 					}
 					img.drawXLinesTime(System.currentTimeMillis() - 60000 * 1440, System.currentTimeMillis(), 10);
 					channel.sendFile(img.getImage(dir + "/" + event.getGuild().getId() + ".png")).queue();
