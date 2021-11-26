@@ -99,6 +99,21 @@ public class Voice implements Module {
 		}
 		// play
 		if (content.startsWith(prefix + "play ")) {
+			// very first lets check if the bot is connected to a vc TODO: maybe change it
+			// that the bot joins automatically a vc
+			AudioManager am = connections.get(guildid);
+			if (am == null || !am.isConnected()) {
+				channel.sendMessage(
+						"To play a song i must be in a voice chat. To connect me join a voice chat and type `" + prefix
+								+ "join`.")
+						.queue();
+				return;
+			}
+			// lets also check if the user making the call is in a voice chat
+			if (!member.getVoiceState().inVoiceChannel()) {
+				channel.sendMessage("If you want me to play something for you, join me in "
+						+ am.getConnectedChannel().getAsMention() + ".").queue();
+			}
 			// first lets get the video id from the input
 			content = content.substring(prefix.length() + "play ".length());
 			boolean validlink = false;
@@ -307,7 +322,8 @@ class ASH implements AudioSendHandler {
 			} else {
 				// playing the next song from the queue
 				try {
-					is = new BufferedInputStream(new FileInputStream(new File(queue.getFirst())));
+					videoId = queue.getFirst();
+					is = new BufferedInputStream(new FileInputStream(new File(videoId)));
 				} catch (FileNotFoundException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
