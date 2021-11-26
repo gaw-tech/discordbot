@@ -154,6 +154,11 @@ public class OtherCommands implements Module {
 				File file = new File(Bot.path + "/commands/" + content.split(" ")[1] + ".java");
 				channel.sendFile(file).queue();
 			}
+			// get file
+			if (content.startsWith(prefix+"getfile ")){
+				File file = new File(content.substring(prefix.length()+"getfile ".length()));
+				channel.sendFile(file).queue();
+			}
 			// load a module from discord
 			if (content.startsWith(prefix + "dload ")) {
 				try {
@@ -315,6 +320,7 @@ public class OtherCommands implements Module {
 		short_commands.add("yoink");
 		short_commands.add("cleanlist");
 		short_commands.add("getmodule");
+		short_commands.add("getfile");
 		short_commands.add("dload");
 		short_commands.add("source");
 		return short_commands;
