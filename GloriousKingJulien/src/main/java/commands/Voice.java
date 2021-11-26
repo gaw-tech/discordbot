@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,6 +45,7 @@ import net.bramp.ffmpeg.builder.FFmpegBuilder;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.audio.AudioReceiveHandler;
 import net.dv8tion.jda.api.audio.AudioSendHandler;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
@@ -56,60 +58,101 @@ import net.dv8tion.jda.api.managers.AudioManager;
 
 public class Voice implements Module {
 	String topname = "voice";
-	HashMap<String, AudioManager> connections = new HashMap<>();
-	// final static String outputwavpath = "output.wav";
-	final static String outputwavpath = bot.Bot.path + "/videos/output.wav";
+	static HashMap<String, AudioManager> connections = new HashMap<>();
+	static HashMap<String, ASH> handlers = new HashMap<>();
+	static HashMap<String, LinkedList<String>> queues = new HashMap<>();
 
 	@Override
 	public void run_message(MessageReceivedEvent event) {
-		if (!event.getAuthor().getId().equals(Bot.myID)) {
+		if (event.getAuthor().isBot()) {
 			return;
 		}
 		Message message = event.getMessage();
 		MessageChannel channel = event.getChannel();
 		String content = message.getContentRaw();
-		if (content.startsWith(prefix + topname + " ")) {
-			content = content.substring(prefix.length() + topname.length() + 1);
-			if (content.startsWith("join ")) {
-				message.delete().queue();
-				content = content.substring("join ".length());
-				AudioManager am = event.getGuild().getAudioManager();
-				VoiceChannel vc = event.getGuild().getVoiceChannelsByName(content, true).get(0);
-				connections.put(event.getGuild().getId(), am);
-				channel.sendMessage("joined " + am.getConnectedChannel()).queue();
-				am.openAudioConnection(vc);
-			}
-			if (content.equals("leaveall")) {
-				message.delete().queue();
-				for (AudioManager am : connections.values()) {
-					am.closeAudioConnection();
+		Member member = event.getMember();
+		String guildid = event.getGuild().getId();
+		// join VC
+		if (content.equals(prefix + "join")) {
+			if (connections.containsKey(guildid)) {
+				if (connections.get(guildid).isConnected()) {
+					channel.sendMessage("I already am in a voice channel. Come to "
+							+ connections.get(guildid).getConnectedChannel().getAsMention() + " to join me.").queue();
+					return;
 				}
 			}
-			if (content.startsWith("video ")) {
-				AudioManager am = event.getGuild().getAudioManager();
-				VoiceChannel vc = event.getMember().getVoiceState().getChannel();
-				connections.put(event.getGuild().getId(), am);
-				am.openAudioConnection(vc);
-				channel.sendMessage("joined " + am.getConnectedChannel()).queue();
-				content = content.substring("video ".length());
-				File file = YTDL.getVideo(content);
-				char[] buf = new char[(int) file.length()];
-				System.out.println("bufferin");
-				try {
-					System.out.println("in the try");
-					java.io.FileReader fr = new java.io.FileReader(file);
-					fr.read(buf);
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+			if (!member.getVoiceState().inVoiceChannel()) {
+				channel.sendMessage("You have to be in a voice channel for 	me to join you.").queue();
+				return;
+			}
+
+			VoiceChannel vc = member.getVoiceState().getChannel();
+			AudioManager am = (connections.containsKey(guildid)) ? connections.get(guildid)
+					: event.getGuild().getAudioManager();
+			connections.put(event.getGuild().getId(), am);
+			am.openAudioConnection(vc);
+			channel.sendMessage("Joining " + vc.getAsMention()).queue();
+			ASH ash = new ASH(guildid);
+			handlers.put(guildid, ash);
+			am.setSendingHandler(ash);
+			// TODO: catch permission error
+		}
+		// play
+		if (content.startsWith(prefix + "play ")) {
+			// first lets get the video id from the input
+			content = content.substring(prefix.length() + "play ".length());
+			boolean validlink = false;
+			int i = content.indexOf("v=");
+			if (i != -1) {
+				validlink = true;
+				content = content.substring(i + 2);
+				i = content.indexOf('&');
+				if (i != -1) {
+					content = content.substring(0, i);
 				}
-				try {
-					am.setSendingHandler(new ASH(file));
-				} catch (IOException | UnsupportedAudioFileException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+			} else {
+				i = content.lastIndexOf('/');
+				if (i != -1) {
+					validlink = true;
+					content = content.substring(i + 1);
 				}
-				System.out.println("testin");
+			}
+			if (!validlink) {
+				message.addReaction(event.getJDA().getEmoteById("779883525800722432")).queue();
+			} else {
+				ASH ash = handlers.get(guildid);
+				LinkedList<String> queue = queues.get(guildid);
+				// now lets check if we already have it downloaded
+				if (!Voice.inqueue(content)) {
+					try {
+						YTDL.getVideo(content);
+					} catch (IOException e) {
+						message.addReaction(event.getJDA().getEmoteById("799214599500726302")).queue();
+						e.printStackTrace();
+					}
+				}
+				// add the video to the queue
+				if (queue == null) {
+					queue = new LinkedList<>();
+				}
+				queue.add(content);
+				// play it right now if nothing is playing
+				if (!ash.isProviding())
+					try {
+						ash.play(content);
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+			}
+		}
+		// owner
+		if (!member.getId().equals(Bot.myID))
+			return;
+		if (content.equals(prefix + "leave")) {
+			message.delete().queue();
+			if (connections.containsKey(guildid)) {
+				connections.get(guildid).closeAudioConnection();
 			}
 		}
 
@@ -183,6 +226,9 @@ public class Voice implements Module {
 	@Override
 	public LinkedList<String> get_short_commands() {
 		LinkedList<String> short_commands = new LinkedList<>();
+		short_commands.add("join");
+		short_commands.add("leave");
+		short_commands.add("play");
 		return short_commands;
 	}
 
@@ -192,34 +238,36 @@ public class Voice implements Module {
 		for (AudioManager am : connections.values()) {
 			am.closeAudioConnection();
 		}
+		for (ASH ash : handlers.values()) {
+			ash.stop();
+		}
 		connections = null;
 	}
 
+	public static boolean inqueue(String videoId) { // probably not thread safe
+		for (LinkedList<String> queue : queues.values()) {
+			for (String id : queue) {
+				if (id.equals(videoId))
+					return true;
+			}
+		}
+		return false;
+	}
 }
 
 class ASH implements AudioSendHandler {
-	ByteBuffer bb = ByteBuffer.allocate(30720 * 100);
-	byte[] bytes;
+	private ByteBuffer bb = ByteBuffer.allocate(30720 * 100);
 	private int framesize = 3840;
-	boolean providing = false;
-	File path = new File("/home/azureuser/bot/videos/output");
-	BufferedInputStream is;
+	private byte[] bytes = new byte[framesize];
+	private boolean providing = false;
+	private String path;
+	private BufferedInputStream is;
+	private String guildid;
+	private String videoId = "";
 
-	ASH(File file) throws IOException, UnsupportedAudioFileException {
-		String args = "ffmpeg -y -v error -i " + file.getAbsolutePath()
-				+ " -strict experimental -vn -sn -ac 2 -ar 48000 -b 1536000 -f s16be " + path.getAbsolutePath();
-		ProcessBuilder pb = new ProcessBuilder(args.split(" "))
-				.redirectError(new File("/home/azureuser/bot/videos/error.txt"));
-		Process p = pb.start();
-		System.out.println(p.pid());
-		System.out.println(Arrays.toString(args.split(" ")));
-		long time = System.currentTimeMillis();
-		while (p.isAlive()) {
-
-		}
-		System.out.println(System.currentTimeMillis() - time + " for conversa");
-		is = new BufferedInputStream(new FileInputStream(path.getAbsolutePath()), framesize * 50 * 10);
-		providing = true;
+	public ASH(String guildid) {
+		this.guildid = guildid;
+		path = "/home/azureuser/bot/videos/";
 	}
 
 	@Override
@@ -227,12 +275,45 @@ class ASH implements AudioSendHandler {
 		return providing;
 	}
 
+	public void play(String videoId) throws IOException {
+		this.videoId = videoId;
+		is = new BufferedInputStream(new FileInputStream(path + videoId), framesize * 50 * 10);
+		providing = true;
+	}
+
 	@Override
 	public ByteBuffer provide20MsAudio() {
 		try {
 			bytes = is.readNBytes(framesize);
 		} catch (IOException e) {
-			providing = false;
+			// we assume we are at the end of the file
+			LinkedList<String> queue = Voice.queues.get(guildid);
+			// remove the played video from the queue
+			queue.removeFirst();
+			// delete the file if its not in any queue
+			if (!Voice.inqueue(videoId)) {
+				new File(videoId).delete();
+			}
+			// closing the old stream
+			try {
+				is.close();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			// stop playing if the queu is empty
+			if (queue.isEmpty()) {
+				providing = false;
+			} else {
+				// playing the next song from the queue
+				try {
+					is = new BufferedInputStream(new FileInputStream(new File(queue.getFirst())));
+				} catch (FileNotFoundException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -242,6 +323,21 @@ class ASH implements AudioSendHandler {
 	@Override
 	public boolean isOpus() {
 		return false;
+	}
+
+	public boolean isProviding() {
+		return providing;
+	}
+
+	public void stop() {
+		providing = false;
+		try {
+			is.close();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 	}
 
 }
@@ -254,7 +350,7 @@ class YTDL {
 	// static OutputStream os = new ByteArrayOutputStream();
 	static OutputStream os = new PipedOutputStream();
 
-	public static File getVideo(String videoId) { // for url https://www.youtube.com/watch?v=abc12345
+	public static void getVideo(String videoId) throws IOException { // for url https://www.youtube.com/watch?v=abc12345
 		YoutubeDownloader downloader = new YoutubeDownloader();
 
 		// sync parsing
@@ -264,32 +360,15 @@ class YTDL {
 
 		// video details
 		VideoDetails details = video.details();
-		System.out.println(details.title());
-		System.out.println(details.viewCount());
-		details.thumbnails().forEach(image -> System.out.println("Thumbnail: " + image));
-
-		// HLS url only for live videos and streams
-		if (video.details().isLive()) {
-			System.out.println("Live Stream HLS URL: " + video.details().liveUrl());
-		}
 
 		// get videos formats only with audio
 		List<VideoWithAudioFormat> videoWithAudioFormats = video.videoWithAudioFormats();
-		videoWithAudioFormats.forEach(it -> {
-			System.out.println(it.audioQuality() + ", " + it.videoQuality() + " : " + it.url());
-		});
 
 		// get all videos formats (may contain better quality but without audio)
 		List<VideoFormat> videoFormats = video.videoFormats();
-		videoFormats.forEach(it -> {
-			System.out.println(it.videoQuality() + " : " + it.url());
-		});
 
 		// get audio formats
 		List<AudioFormat> audioFormats = video.audioFormats();
-		audioFormats.forEach(it -> {
-			System.out.println(it.audioQuality() + " : " + it.url());
-		});
 
 		// get best format
 		video.bestVideoWithAudioFormat();
@@ -307,15 +386,12 @@ class YTDL {
 		// itags can be found here -
 		// https://gist.github.com/sidneys/7095afe4da4ae58694d128b1034e01e2
 		Format formatByItag = video.findFormatByItag(18); // return null if not found
-		if (formatByItag != null) {
-			System.out.println(formatByItag.url());
-		}
 
 		Format format = video.bestAudioFormat();
 
 		// os = new
 		// ByteArrayOutputStream(Long.valueOf(video.bestAudioFormat().contentLength()).intValue());
-		File file = new File("audio");
+
 		/*
 		 * // download in-memory to OutputStream RequestVideoStreamDownload vrequest =
 		 * new RequestVideoStreamDownload(format, os).maxRetries(100); Response<Void>
@@ -334,11 +410,10 @@ class YTDL {
 		 * 
 		 * }).async()); System.out.println(os); System.out.println(vresponse.error());
 		 */
-		RequestVideoFileDownload vrequest = new RequestVideoFileDownload(format).overwriteIfExists(true).renameTo("vid")
-				.callback(new YoutubeProgressCallback<File>() {
+		RequestVideoFileDownload vrequest = new RequestVideoFileDownload(format).overwriteIfExists(true)
+				.renameTo(videoId).callback(new YoutubeProgressCallback<File>() {
 					@Override
 					public void onDownloading(int progress) {
-						System.out.printf("Downloaded %d%%\n", progress);
 					}
 
 					@Override
@@ -352,7 +427,19 @@ class YTDL {
 					}
 				}).async();
 		Response<File> vresponse = downloader.downloadVideoFile(vrequest);
-		file = vresponse.data(); // will block current thread
-		return file;
+		File file = vresponse.data();
+		String args = "ffmpeg -y -v error -i " + file.getAbsolutePath()
+				+ " -strict experimental -vn -sn -ac 2 -ar 48000 -b 1536000 -f s16be videos/" + videoId;
+		ProcessBuilder pb = new ProcessBuilder(args.split(" "))
+				.redirectError(new File("/home/azureuser/bot/videos/error.txt"));
+		Process p = pb.start();
+		System.out.println(p.pid());
+		System.out.println(Arrays.toString(args.split(" ")));
+		long time = System.currentTimeMillis();
+		while (p.isAlive()) {
+
+		}
+		System.out.println(System.currentTimeMillis() - time + " for conversation");
+		file.delete();
 	}
 }
