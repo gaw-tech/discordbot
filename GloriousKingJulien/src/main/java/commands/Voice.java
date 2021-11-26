@@ -54,6 +54,7 @@ import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.managers.AudioManager;
 
 public class Voice implements Module {
@@ -90,11 +91,15 @@ public class Voice implements Module {
 			AudioManager am = (connections.containsKey(guildid)) ? connections.get(guildid)
 					: event.getGuild().getAudioManager();
 			connections.put(event.getGuild().getId(), am);
-			am.openAudioConnection(vc);
-			channel.sendMessage("Joining " + vc.getAsMention()).queue();
 			ASH ash = new ASH(guildid);
 			handlers.put(guildid, ash);
 			am.setSendingHandler(ash);
+			try {
+				am.openAudioConnection(vc);
+				channel.sendMessage("Joining " + vc.getAsMention()).queue();
+			} catch (InsufficientPermissionException e) {
+				channel.sendMessage("It looks like i cant join you due to missing permissions. <:sad:799214599500726302>").queue();
+			}
 			// TODO: catch permission error
 		}
 		// play
