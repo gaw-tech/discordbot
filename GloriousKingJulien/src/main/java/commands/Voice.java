@@ -99,7 +99,7 @@ public class Voice implements Module {
 			// TODO: catch permission error
 		}
 		// play
-		if (content.startsWith(prefix + "play ")) {
+		if (content.startsWith(prefix + "play ") || content.startsWith(prefix + "p ")) {
 			// very first lets check if the bot is connected to a vc TODO: maybe change it
 			// that the bot joins automatically a vc
 			AudioManager am = connections.get(guildid);
@@ -116,7 +116,7 @@ public class Voice implements Module {
 						+ am.getConnectedChannel().getAsMention() + ".").queue();
 			}
 			// first lets get the video id from the input
-			content = content.substring(prefix.length() + "play ".length());
+			// content = content.substring(prefix.length() + "play ".length());
 			boolean validlink = false;
 			int i = content.indexOf("v=");
 			if (i != -1) {
@@ -174,7 +174,7 @@ public class Voice implements Module {
 			return;
 		}
 		// show queue
-		if (content.equals(prefix + "queue")||content.equals(prefix+"q")) {
+		if (content.equals(prefix + "queue") || content.equals(prefix + "q")) {
 			LinkedList<String> queue = Voice.queues.get(guildid);
 			if (queue == null || queue.isEmpty()) {
 				channel.sendMessage("I have nothing queued up to play next.").queue();
@@ -186,7 +186,7 @@ public class Voice implements Module {
 				int i = 0;
 				for (String videoId : queue) {
 					VideoDetails vd = Voice.videodetails.get(videoId);
-					songs += "**" + ++i + ".** " + vd.title() + "\n";
+					songs += "**" + ++i + ".** [" + vd.title() + "](https://www.youtube.com/watch?v=" + videoId + ")\n";
 					if (i == 15) {
 						break;
 					}
@@ -311,6 +311,7 @@ public class Voice implements Module {
 		short_commands.add("join");
 		short_commands.add("leave");
 		short_commands.add("play");
+		short_commands.add("p");
 		short_commands.add("now");
 		short_commands.add("queue");
 		short_commands.add("q");
@@ -575,7 +576,7 @@ class YTDL {
 				}).async();
 		Response<File> vresponse = downloader.downloadVideoFile(vrequest);
 		File file = vresponse.data();
-		String args = "ffmpeg.exe -y -v error -i " + file.getAbsolutePath()
+		String args = "ffmpeg -y -v error -i " + file.getAbsolutePath()
 				+ " -strict experimental -vn -sn -ac 2 -ar 48000 -b 1536000 -f s16be "
 				+ (new File(Bot.path + "/videos/" + videoId).getAbsolutePath());
 		ProcessBuilder pb = new ProcessBuilder(args.split(" ")).redirectError(new File(Bot.path + "/videos/error.txt"));
