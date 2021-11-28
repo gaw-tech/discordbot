@@ -1,27 +1,18 @@
 package commands;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.lang.ProcessBuilder.Redirect;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Stream;
-import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.Arrays;
-
-import javax.sound.sampled.UnsupportedAudioFileException;
 
 import com.github.kiulian.downloader.YoutubeDownloader;
 import com.github.kiulian.downloader.downloader.YoutubeProgressCallback;
@@ -38,10 +29,6 @@ import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
 import com.github.kiulian.downloader.model.videos.formats.VideoWithAudioFormat;
 import bot.Bot;
 import bot.Module;
-import net.bramp.ffmpeg.FFmpeg;
-import net.bramp.ffmpeg.FFmpegExecutor;
-import net.bramp.ffmpeg.FFprobe;
-import net.bramp.ffmpeg.builder.FFmpegBuilder;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.audio.AudioReceiveHandler;
 import net.dv8tion.jda.api.audio.AudioSendHandler;
@@ -62,6 +49,7 @@ public class Voice implements Module {
 	static HashMap<String, AudioManager> connections = new HashMap<>();
 	static HashMap<String, ASH> handlers = new HashMap<>();
 	static HashMap<String, LinkedList<String>> queues = new HashMap<>();
+	static HashMap<String, VideoDetails> videodetails = new HashMap<>();
 
 	@Override
 	public void run_message(MessageReceivedEvent event) {
@@ -98,7 +86,8 @@ public class Voice implements Module {
 				am.openAudioConnection(vc);
 				channel.sendMessage("Joining " + vc.getAsMention()).queue();
 			} catch (InsufficientPermissionException e) {
-				channel.sendMessage("It looks like i cant join you due to missing permissions. <:sad:799214599500726302>").queue();
+				channel.sendMessage(
+						"It looks like i cant join you due to missing permissions. <:sad:799214599500726302>").queue();
 			}
 			// TODO: catch permission error
 		}
@@ -154,6 +143,7 @@ public class Voice implements Module {
 				// add the video to the queue
 				if (queue == null) {
 					queue = new LinkedList<>();
+					queues.put(guildid, queue);
 				}
 				queue.add(content);
 				// play it right now if nothing is playing
@@ -173,6 +163,13 @@ public class Voice implements Module {
 			message.delete().queue();
 			if (connections.containsKey(guildid)) {
 				connections.get(guildid).closeAudioConnection();
+			}
+			return;
+		}
+		if (content.equals(prefix + "voice queues")) {
+			channel.sendMessage("queues").complete().delete().queueAfter(4, TimeUnit.SECONDS);
+			for (LinkedList<String> queue : Voice.queues.values()) {
+				System.out.println(queue);
 			}
 		}
 
@@ -262,13 +259,17 @@ public class Voice implements Module {
 			ash.stop();
 		}
 		connections = null;
+		handlers = null;
+		queues = null;
+		videodetails = null;
 	}
 
-	public static boolean inqueue(String videoId) { // probably not thread safe
+	static boolean inqueue(String videoId) { // probably not thread safe
 		for (LinkedList<String> queue : queues.values()) {
 			for (String id : queue) {
-				if (id.equals(videoId))
+				if (id.equals(videoId)) {
 					return true;
+				}
 			}
 		}
 		return false;
@@ -278,6 +279,7 @@ public class Voice implements Module {
 class ASH implements AudioSendHandler {
 	private ByteBuffer bb = ByteBuffer.allocate(30720 * 100);
 	private int framesize = 3840;
+	private long frames = 0;
 	private byte[] bytes = new byte[framesize];
 	private boolean providing = false;
 	private String path;
@@ -298,21 +300,20 @@ class ASH implements AudioSendHandler {
 	public void play(String videoId) throws IOException {
 		this.videoId = videoId;
 		is = new BufferedInputStream(new FileInputStream(path + videoId), framesize * 50 * 10);
+		frames = new File(path + videoId).length() / framesize;
 		providing = true;
 	}
 
 	@Override
 	public ByteBuffer provide20MsAudio() {
-		try {
-			bytes = is.readNBytes(framesize);
-		} catch (IOException e) {
-			// we assume we are at the end of the file
+		if (frames == 0) {
+			providing = false; // end playback for now
+			// we are at the end of the file
 			LinkedList<String> queue = Voice.queues.get(guildid);
 			// remove the played video from the queue
-			queue.removeFirst();
 			// delete the file if its not in any queue
 			if (!Voice.inqueue(videoId)) {
-				new File(videoId).delete();
+				new File(path+videoId).delete();
 			}
 			// closing the old stream
 			try {
@@ -322,20 +323,25 @@ class ASH implements AudioSendHandler {
 				e1.printStackTrace();
 			}
 			// stop playing if the queu is empty
-			if (queue.isEmpty()) {
-				providing = false;
-			} else {
+			if (!queue.isEmpty()) {
 				// playing the next song from the queue
 				try {
 					videoId = queue.getFirst();
-					is = new BufferedInputStream(new FileInputStream(new File(videoId)));
+					frames = new File(path + videoId).length() / 8;
+					is = new BufferedInputStream(new FileInputStream(new File(path + videoId)));
+					providing = true;
 				} catch (FileNotFoundException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}
 
-			// TODO Auto-generated catch block
+		}
+		try {
+			bytes = is.readNBytes(framesize);
+			frames--;
+		} catch (IOException e) {
+			System.out.println("frames: " + frames);
 			e.printStackTrace();
 		}
 		return ByteBuffer.wrap(bytes);
@@ -381,6 +387,7 @@ class YTDL {
 
 		// video details
 		VideoDetails details = video.details();
+		Voice.videodetails.put(videoId, details);
 
 		// get videos formats only with audio
 		List<VideoWithAudioFormat> videoWithAudioFormats = video.videoWithAudioFormats();
@@ -439,7 +446,6 @@ class YTDL {
 
 					@Override
 					public void onFinished(File videoInfo) {
-						System.out.println("Finished file: " + videoInfo);
 					}
 
 					@Override
@@ -454,7 +460,6 @@ class YTDL {
 		ProcessBuilder pb = new ProcessBuilder(args.split(" "))
 				.redirectError(new File("/home/azureuser/bot/videos/error.txt"));
 		Process p = pb.start();
-		System.out.println(p.pid());
 		System.out.println(Arrays.toString(args.split(" ")));
 		long time = System.currentTimeMillis();
 		while (p.isAlive()) {
