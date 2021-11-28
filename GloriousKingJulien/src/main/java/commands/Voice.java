@@ -45,11 +45,18 @@ import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.managers.AudioManager;
 
 public class Voice implements Module {
-	String topname = "voice";
+	String topname = "Music";
 	static HashMap<String, AudioManager> connections = new HashMap<>();
 	static HashMap<String, ASH> handlers = new HashMap<>();
 	static HashMap<String, LinkedList<String>> queues = new HashMap<>();
 	static HashMap<String, VideoDetails> videodetails = new HashMap<>();
+
+	public Voice() {
+		File file = new File(Bot.path + "/videos");
+		if (!file.exists()) {
+			file.mkdir();
+		}
+	}
 
 	@Override
 	public void run_message(MessageReceivedEvent event) {
@@ -136,7 +143,6 @@ public class Voice implements Module {
 					try {
 						YTDL.getVideo(content);
 					} catch (IOException e) {
-						message.addReaction(event.getJDA().getEmoteById("799214599500726302")).queue();
 						e.printStackTrace();
 					}
 				}
@@ -155,10 +161,58 @@ public class Voice implements Module {
 						e.printStackTrace();
 					}
 			}
+			return;
+		}
+		// get infos about the song being played
+		if (content.equals(prefix + "now")) {
+			ASH ash = handlers.get(guildid);
+			if (ash == null || !ash.isProviding()) {
+				channel.sendMessage("I'm not playing anything at the moment.").queue();
+			} else {
+				channel.sendMessage(ash.playbackInfo().build()).queue();
+			}
+			return;
+		}
+		// show queue
+		if (content.equals(prefix + "queue")||content.equals(prefix+"q")) {
+			LinkedList<String> queue = Voice.queues.get(guildid);
+			if (queue == null || queue.isEmpty()) {
+				channel.sendMessage("I have nothing queued up to play next.").queue();
+			} else {
+				EmbedBuilder eb = new EmbedBuilder();
+				eb.setTitle("Queue");
+				// we only want to show the first 15 songs in the queue
+				String songs = "";
+				int i = 0;
+				for (String videoId : queue) {
+					VideoDetails vd = Voice.videodetails.get(videoId);
+					songs += "**" + ++i + ".** " + vd.title() + "\n";
+					if (i == 15) {
+						break;
+					}
+				}
+				eb.setDescription(songs);
+				channel.sendMessage(eb.build()).queue();
+			}
+			return;
 		}
 		// owner
-		if (!member.getId().equals(Bot.myID))
+		if (!member.getId().equals(Bot.myID)) {
 			return;
+		}
+		if (content.equals(prefix + "skip")) {
+			// check if the bot is connected and playing something
+			AudioManager am = connections.get(guildid);
+			ASH ash = handlers.get(guildid);
+			if (am == null || !am.isConnected() || ash == null || !ash.isProviding()) {
+				channel.sendMessage("I'm not playing anything.").complete().delete().queueAfter(5, TimeUnit.SECONDS);
+				return;
+			} else {
+				ash.skip();
+				channel.sendMessage("Skipped the current song.").complete().delete().queueAfter(5, TimeUnit.SECONDS);
+			}
+			return;
+		}
 		if (content.equals(prefix + "leave")) {
 			message.delete().queue();
 			if (connections.containsKey(guildid)) {
@@ -166,11 +220,12 @@ public class Voice implements Module {
 			}
 			return;
 		}
-		if (content.equals(prefix + "voice queues")) {
+		if (content.equals(prefix + topname + " queues")) {
 			channel.sendMessage("queues").complete().delete().queueAfter(4, TimeUnit.SECONDS);
 			for (LinkedList<String> queue : Voice.queues.values()) {
 				System.out.println(queue);
 			}
+			return;
 		}
 
 	}
@@ -214,13 +269,20 @@ public class Voice implements Module {
 	@Override
 	public boolean has_basic_help() {
 		// TODO Auto-generated method stub
-		return false;
+		return true;
 	}
 
 	@Override
 	public EmbedBuilder get_help() {
-		// TODO Auto-generated method stub
-		return null;
+		EmbedBuilder eb = new EmbedBuilder();
+		eb.setTitle("Help " + topname);
+		eb.addField("Description:", "A very basic music bot functionality.", true);
+		eb.addField("Usage:",
+				"`" + prefix + "join` add me to a voice channel.\n`" + prefix
+						+ "play <youtube link>` plays the requested video or adds it to the queue\n`" + prefix
+						+ "now` shows which song is being played back\n`" + prefix + "queue` shows the queue",
+				false);
+		return eb;
 	}
 
 	@Override
@@ -231,8 +293,11 @@ public class Voice implements Module {
 
 	@Override
 	public Field get_basic_help() {
-		// TODO Auto-generated method stub
-		return null;
+		return new Field(topname,
+				"`" + prefix + "join` add me to a voice channel.\n`" + prefix
+						+ "play <youtube link>` plays the requested video or adds it to the queue\n`" + prefix
+						+ "now` shows which song is being played back\n`" + prefix + "queue` shows the queue",
+				true, true);
 	}
 
 	@Override
@@ -246,6 +311,10 @@ public class Voice implements Module {
 		short_commands.add("join");
 		short_commands.add("leave");
 		short_commands.add("play");
+		short_commands.add("now");
+		short_commands.add("queue");
+		short_commands.add("q");
+		short_commands.add("skip");
 		return short_commands;
 	}
 
@@ -289,7 +358,7 @@ class ASH implements AudioSendHandler {
 
 	public ASH(String guildid) {
 		this.guildid = guildid;
-		path = "/home/azureuser/bot/videos/";
+		path = Bot.path + "/videos/";
 	}
 
 	@Override
@@ -300,7 +369,7 @@ class ASH implements AudioSendHandler {
 	public void play(String videoId) throws IOException {
 		this.videoId = videoId;
 		is = new BufferedInputStream(new FileInputStream(path + videoId), framesize * 50 * 10);
-		frames = new File(path + videoId).length() / framesize;
+		frames = (Voice.videodetails.get(videoId).lengthSeconds() - 1) * 50;
 		providing = true;
 	}
 
@@ -311,9 +380,10 @@ class ASH implements AudioSendHandler {
 			// we are at the end of the file
 			LinkedList<String> queue = Voice.queues.get(guildid);
 			// remove the played video from the queue
+			queue.removeFirst();
 			// delete the file if its not in any queue
 			if (!Voice.inqueue(videoId)) {
-				new File(path+videoId).delete();
+				new File(path + videoId).delete();
 			}
 			// closing the old stream
 			try {
@@ -327,7 +397,7 @@ class ASH implements AudioSendHandler {
 				// playing the next song from the queue
 				try {
 					videoId = queue.getFirst();
-					frames = new File(path + videoId).length() / 8;
+					frames = (Voice.videodetails.get(videoId).lengthSeconds() - 1) * 50;
 					is = new BufferedInputStream(new FileInputStream(new File(path + videoId)));
 					providing = true;
 				} catch (FileNotFoundException e1) {
@@ -354,6 +424,56 @@ class ASH implements AudioSendHandler {
 
 	public boolean isProviding() {
 		return providing;
+	}
+
+	public EmbedBuilder playbackInfo() {
+		EmbedBuilder eb = new EmbedBuilder();
+		VideoDetails vd = Voice.videodetails.get(videoId);
+		eb.setTitle(vd.title());
+		// eb.setDescription(vd.description()); // could be too long
+		// eb.setAuthor(vd.author(), vd.liveUrl()); // probably wron link
+		eb.addField("Views", "" + vd.viewCount(), true);
+		long played = vd.lengthSeconds() - (frames / 50);
+		eb.addField("Duration", "" + (played / 60) + ":" + (played % 60) + "/" + (vd.lengthSeconds() / 60) + ":"
+				+ (vd.lengthSeconds() % 60), true);
+		List<String> thumbnails = vd.thumbnails();
+		if (thumbnails != null) {
+			// eb.setImage(thumbnails.get(thumbnails.size() - 1)); // thumbnail is lame
+		}
+		return eb;
+	}
+
+	public void skip() {
+		// end playback
+		providing = false;
+		// remove played song from queue
+		LinkedList<String> queue = Voice.queues.get(guildid);
+		queue.removeFirst();
+		// possibly delete the file
+		if (!Voice.inqueue(videoId)) {
+			new File(path + videoId).delete();
+		}
+		// closing the old stream
+		try {
+			is.close();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		// stop playing if the queu is empty
+		if (!queue.isEmpty()) {
+			// playing the next song from the queue
+			try {
+				videoId = queue.getFirst();
+				frames = (Voice.videodetails.get(videoId).lengthSeconds() - 1) * 50;
+				is = new BufferedInputStream(new FileInputStream(new File(path + videoId)));
+				providing = true;
+			} catch (FileNotFoundException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+
 	}
 
 	public void stop() {
@@ -438,8 +558,8 @@ class YTDL {
 		 * 
 		 * }).async()); System.out.println(os); System.out.println(vresponse.error());
 		 */
-		RequestVideoFileDownload vrequest = new RequestVideoFileDownload(format).overwriteIfExists(true)
-				.renameTo(videoId).callback(new YoutubeProgressCallback<File>() {
+		RequestVideoFileDownload vrequest = new RequestVideoFileDownload(format).saveTo(new File(Bot.path + "/videos"))
+				.overwriteIfExists(true).renameTo(videoId).callback(new YoutubeProgressCallback<File>() {
 					@Override
 					public void onDownloading(int progress) {
 					}
@@ -455,10 +575,10 @@ class YTDL {
 				}).async();
 		Response<File> vresponse = downloader.downloadVideoFile(vrequest);
 		File file = vresponse.data();
-		String args = "ffmpeg -y -v error -i " + file.getAbsolutePath()
-				+ " -strict experimental -vn -sn -ac 2 -ar 48000 -b 1536000 -f s16be videos/" + videoId;
-		ProcessBuilder pb = new ProcessBuilder(args.split(" "))
-				.redirectError(new File("/home/azureuser/bot/videos/error.txt"));
+		String args = "ffmpeg.exe -y -v error -i " + file.getAbsolutePath()
+				+ " -strict experimental -vn -sn -ac 2 -ar 48000 -b 1536000 -f s16be "
+				+ (new File(Bot.path + "/videos/" + videoId).getAbsolutePath());
+		ProcessBuilder pb = new ProcessBuilder(args.split(" ")).redirectError(new File(Bot.path + "/videos/error.txt"));
 		Process p = pb.start();
 		System.out.println(Arrays.toString(args.split(" ")));
 		long time = System.currentTimeMillis();
