@@ -390,11 +390,11 @@ class APLA extends ListenerAdapter {
 				String nr = split[4];
 				String x = split[2];
 				String y = split[3];
-				Color color = new Color(Integer.valueOf(nr.substring(1, 3), 16),
+				Color c = new Color(Integer.valueOf(nr.substring(1, 3), 16),
 						Integer.valueOf(nr.substring(3, 5), 16), Integer.valueOf(nr.substring(5, 7), 16));
-				int sum = (color.getRed() + color.getGreen() + color.getBlue()) / 3;
+				int sum = (c.getRed() + c.getGreen() + c.getBlue()) / 3;
 				event.getMessage()
-						.reply(".place setpixel " + x + " " + y + " " + String.format("#%02x%02x%02x", sum, sum, sum)
+						.reply(".place setpixel " + x + " " + y + " " + String.format("#%02x%02x%02x", 255-c.getRed(), 255-c.getGreen(), 255-c.getBlue())
 								+ " | <t:" + (1800+event.getMessage().getTimeCreated().toEpochSecond()) + ":R>")
 						.queueAfter(30, TimeUnit.MINUTES);
 			}
