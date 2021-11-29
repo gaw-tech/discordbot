@@ -577,14 +577,17 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 
 	@Override
 	public void run_button(ButtonClickEvent event) {
+		if (!event.getButton().getId().startsWith("bgb")) {
+			return;
+		}
 		InteractionHook ih = event.deferReply().setEphemeral(true).complete();
 		LinkedList<String> ignore = new LinkedList<>();
-		ignore.add("802472545172455444");//za
-		ignore.add("466292292945313799");//za
-		ignore.add("599179325224386561");//pherb
-		ignore.add("304587987956531201");//pherb
-		ignore.add("814844933813829652");//popopina
-		ignore.add("850353176862916608");//ibot
+		ignore.add("802472545172455444");// za
+		ignore.add("466292292945313799");// za
+		ignore.add("599179325224386561");// pherb
+		ignore.add("304587987956531201");// pherb
+		ignore.add("814844933813829652");// popopina
+		ignore.add("850353176862916608");// ibot
 		if (ignore.contains(event.getUser().getId())) {
 			return;
 		}
@@ -614,7 +617,7 @@ class ButtonGame {
 	boolean initiated = false;
 	boolean candelete = false;
 	Emoji emoji = Emoji.fromEmote("sipspin", 831867874506178660L, true);
-	Button button = Button.of(ButtonStyle.PRIMARY, "" + serverId, "10", emoji);
+	Button button = Button.of(ButtonStyle.PRIMARY, "bgb" + serverId, "10", emoji);
 	Message message;
 
 	// Constructor
@@ -625,7 +628,7 @@ class ButtonGame {
 
 	public void run() {
 		this.value++;
-		button = Button.of(ButtonStyle.PRIMARY, "" + serverId, "" + value, emoji);
+		button = Button.of(ButtonStyle.PRIMARY, "bgb" + serverId, "" + value, emoji);
 		if (initiated) {
 			message.editMessage(ButtonCommand.button_message).setActionRow(button).queue();
 		}
@@ -637,7 +640,7 @@ class ButtonGame {
 
 	public void setValue(long value) {
 		this.value = value;
-		button = Button.of(ButtonStyle.PRIMARY, "" + serverId, "" + value,
+		button = Button.of(ButtonStyle.PRIMARY, "bgb" + serverId, "" + value,
 				Emoji.fromEmote("discordloading", 852953358745468938l, true));
 	}
 
