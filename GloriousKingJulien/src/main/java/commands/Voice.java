@@ -1,5 +1,9 @@
 package commands;
 
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -12,6 +16,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import javax.imageio.ImageIO;
+
 import java.util.Arrays;
 
 import com.github.kiulian.downloader.YoutubeDownloader;
@@ -114,6 +121,7 @@ public class Voice implements Module {
 			if (!member.getVoiceState().inVoiceChannel()) {
 				channel.sendMessage("If you want me to play something for you, join me in "
 						+ am.getConnectedChannel().getAsMention() + ".").queue();
+				return;
 			}
 			// first lets get the video id from the input
 			// content = content.substring(prefix.length() + "play ".length());
@@ -169,7 +177,7 @@ public class Voice implements Module {
 			if (ash == null || !ash.isProviding()) {
 				channel.sendMessage("I'm not playing anything at the moment.").queue();
 			} else {
-				channel.sendMessage(ash.playbackInfo().build()).queue();
+				ash.playbackInfo(channel);
 			}
 			return;
 		}
@@ -427,21 +435,43 @@ class ASH implements AudioSendHandler {
 		return providing;
 	}
 
-	public EmbedBuilder playbackInfo() {
+	public void playbackInfo(MessageChannel channel) {
 		EmbedBuilder eb = new EmbedBuilder();
 		VideoDetails vd = Voice.videodetails.get(videoId);
-		eb.setTitle(vd.title());
+		eb.setAuthor(vd.title());
+		eb.setDescription("https://www.youtube.com/watch?v=" + videoId);
 		// eb.setDescription(vd.description()); // could be too long
 		// eb.setAuthor(vd.author(), vd.liveUrl()); // probably wron link
 		eb.addField("Views", "" + vd.viewCount(), true);
+		eb.addField("Rating", vd.averageRating() + "", true);
 		long played = vd.lengthSeconds() - (frames / 50);
 		eb.addField("Duration", "" + (played / 60) + ":" + (played % 60) + "/" + (vd.lengthSeconds() / 60) + ":"
 				+ (vd.lengthSeconds() % 60), true);
 		List<String> thumbnails = vd.thumbnails();
 		if (thumbnails != null) {
-			// eb.setImage(thumbnails.get(thumbnails.size() - 1)); // thumbnail is lame
+			eb.setThumbnail(thumbnails.get(thumbnails.size() - 1)); // thumbnail is lame
 		}
-		return eb;
+		BufferedImage bi = new BufferedImage(800, 20, BufferedImage.TYPE_INT_RGB);
+		Graphics2D g2d = bi.createGraphics();
+		g2d.setColor(Color.DARK_GRAY);
+		g2d.fillRect(0, 0, 800, 20);
+		g2d.setColor(Color.red);
+		g2d.fillRect(0, 0, (int) ((800.0 / (vd.lengthSeconds() * 50)) * (vd.lengthSeconds() * 50 - frames)), 20);
+		g2d.setColor(Color.black);
+		g2d.drawRect(0, 0, 799, 19);
+		File file = new File(path + "/timebar.png");
+		try {
+			ImageIO.write(bi, "png", file);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.out.println("failed miserably");
+		}
+		eb.setImage("attachment://timebar.png");
+		while (!file.exists()) {
+		}
+		channel.sendFile(file, "timebar.png").embed(eb.build()).complete();
+		file.delete();
 	}
 
 	public void skip() {
