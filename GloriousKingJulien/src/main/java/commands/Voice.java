@@ -1,6 +1,5 @@
 package commands;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -15,6 +14,8 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.imageio.ImageIO;
@@ -57,12 +58,29 @@ public class Voice implements Module {
 	static HashMap<String, ASH> handlers = new HashMap<>();
 	static HashMap<String, LinkedList<String>> queues = new HashMap<>();
 	static HashMap<String, VideoDetails> videodetails = new HashMap<>();
+	static HashMap<String, Message> playermessages = new HashMap<>();
+	static MessageChannel image_dump;
+	Runnable playerUpdater = new Runnable() {
+		@Override
+		public void run() {
+			for (Message m : Voice.playermessages.values()) {
+				String guildid = m.getGuild().getId();
+				ASH ash = Voice.handlers.get(guildid);
+				if (ash != null && ash.isProviding()) {
+					ash.playerMessage();
+				}
+			}
+		}
+	};
+	private ScheduledExecutorService exec = Executors.newScheduledThreadPool(1);
 
 	public Voice() {
 		File file = new File(Bot.path + "/videos");
 		if (!file.exists()) {
 			file.mkdir();
 		}
+		exec.scheduleAtFixedRate(playerUpdater, 0, 30, TimeUnit.SECONDS);
+		image_dump = Bot.jda.getTextChannelById(914911294971326547l);
 	}
 
 	@Override
@@ -208,6 +226,30 @@ public class Voice implements Module {
 		if (!member.getId().equals(Bot.myID)) {
 			return;
 		}
+		if (content.equals(prefix + "player")) {
+			// check if the bot is connected
+			AudioManager am = connections.get(guildid);
+			ASH ash = handlers.get(guildid);
+			if (am == null || !am.isConnected() || ash == null) {
+				channel.sendMessage("I'm not connected.").complete().delete().queueAfter(5, TimeUnit.SECONDS);
+				return;
+			} else {
+				EmbedBuilder eb = new EmbedBuilder();
+				eb.setTitle("Player");
+				Message m = channel.sendMessage(eb.build()).complete();
+				Message tmp = null;
+				if (Voice.playermessages.containsKey(guildid)) {
+					tmp = Voice.playermessages.get(guildid);
+				}
+				Voice.playermessages.put(guildid, m);
+				if (tmp != null) {
+					tmp.delete().queue();
+				}
+				ash.playerMessage();
+			}
+			return;
+		}
+		// skip the current song
 		if (content.equals(prefix + "skip")) {
 			// check if the bot is connected and playing something
 			AudioManager am = connections.get(guildid);
@@ -221,6 +263,7 @@ public class Voice implements Module {
 			}
 			return;
 		}
+		// leave the voice channel in the guild
 		if (content.equals(prefix + "leave")) {
 			message.delete().queue();
 			if (connections.containsKey(guildid)) {
@@ -228,6 +271,7 @@ public class Voice implements Module {
 			}
 			return;
 		}
+		// only to debug
 		if (content.equals(prefix + topname + " queues")) {
 			channel.sendMessage("queues").complete().delete().queueAfter(4, TimeUnit.SECONDS);
 			for (LinkedList<String> queue : Voice.queues.values()) {
@@ -324,17 +368,22 @@ public class Voice implements Module {
 		short_commands.add("queue");
 		short_commands.add("q");
 		short_commands.add("skip");
+		short_commands.add("player");
 		return short_commands;
 	}
 
 	@Override
 	public void unload() {
+		exec.shutdownNow();
 		topname = null;
 		for (AudioManager am : connections.values()) {
 			am.closeAudioConnection();
 		}
 		for (ASH ash : handlers.values()) {
 			ash.stop();
+		}
+		for (Message m : Voice.playermessages.values()) {
+			m.delete().queue();
 		}
 		connections = null;
 		handlers = null;
@@ -377,6 +426,7 @@ class ASH implements AudioSendHandler {
 
 	public void play(String videoId) throws IOException {
 		this.videoId = videoId;
+		playerMessage();
 		is = new BufferedInputStream(new FileInputStream(path + videoId), framesize * 50 * 10);
 		frames = (Voice.videodetails.get(videoId).lengthSeconds() - 1) * 50;
 		providing = true;
@@ -385,8 +435,10 @@ class ASH implements AudioSendHandler {
 	@Override
 	public ByteBuffer provide20MsAudio() {
 		if (frames == 0) {
-			providing = false; // end playback for now
-			// we are at the end of the file
+			providing = false; // end playback for now we are at the end of the file
+			// update player if it exists
+			playerMessage();
+
 			LinkedList<String> queue = Voice.queues.get(guildid);
 			// remove the played video from the queue
 			queue.removeFirst();
@@ -405,12 +457,10 @@ class ASH implements AudioSendHandler {
 			if (!queue.isEmpty()) {
 				// playing the next song from the queue
 				try {
-					videoId = queue.getFirst();
-					frames = (Voice.videodetails.get(videoId).lengthSeconds() - 1) * 50;
-					is = new BufferedInputStream(new FileInputStream(new File(path + videoId)));
-					providing = true;
-				} catch (FileNotFoundException e1) {
+					play(queue.getFirst());
+				} catch (IOException e1) {
 					// TODO Auto-generated catch block
+					providing = false;
 					e1.printStackTrace();
 				}
 			}
@@ -451,12 +501,13 @@ class ASH implements AudioSendHandler {
 		if (thumbnails != null) {
 			eb.setThumbnail(thumbnails.get(thumbnails.size() - 1)); // thumbnail is lame
 		}
+		eb.setColor(new Color((int) (playedBarLength(vd) / 800.0 * 255), 0, 0));
 		BufferedImage bi = new BufferedImage(800, 20, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g2d = bi.createGraphics();
 		g2d.setColor(Color.DARK_GRAY);
 		g2d.fillRect(0, 0, 800, 20);
 		g2d.setColor(Color.red);
-		g2d.fillRect(0, 0, (int) ((800.0 / (vd.lengthSeconds() * 50)) * (vd.lengthSeconds() * 50 - frames)), 20);
+		g2d.fillRect(0, 0, playedBarLength(vd), 20);
 		g2d.setColor(Color.black);
 		g2d.drawRect(0, 0, 799, 19);
 		File file = new File(path + "/timebar.png");
@@ -472,6 +523,58 @@ class ASH implements AudioSendHandler {
 		}
 		channel.sendFile(file, "timebar.png").embed(eb.build()).complete();
 		file.delete();
+	}
+
+	public void playerMessage() {
+		if (!Voice.playermessages.containsKey(guildid)) {
+			return;
+		}
+		Message m = Voice.playermessages.get(guildid);
+		MessageChannel channel = m.getChannel();
+		EmbedBuilder eb = new EmbedBuilder();
+		VideoDetails vd = Voice.videodetails.get(videoId);
+		eb.setAuthor(vd.title(), "https://www.youtube.com/watch?v=" + videoId);
+		// eb.setDescription(vd.description()); // could be too long
+		// eb.setAuthor(vd.author(), vd.liveUrl()); // probably wron link
+		eb.addField("Views", "" + vd.viewCount(), true);
+		eb.addField("Rating", vd.averageRating() + "", true);
+		long played = vd.lengthSeconds() - (frames / 50);
+		eb.addField("Duration", "" + (played / 60) + ":" + (played % 60) + "/" + (vd.lengthSeconds() / 60) + ":"
+				+ (vd.lengthSeconds() % 60), true);
+		List<String> thumbnails = vd.thumbnails();
+		if (thumbnails != null) {
+			eb.setThumbnail(thumbnails.get(thumbnails.size() - 1)); // thumbnail is lame
+		}
+		eb.setColor(new Color((int) (playedBarLength(vd) / 800.0 * 255), 0, 0));
+		BufferedImage bi = new BufferedImage(800, 20, BufferedImage.TYPE_INT_RGB);
+		Graphics2D g2d = bi.createGraphics();
+		g2d.setColor(Color.DARK_GRAY);
+		g2d.fillRect(0, 0, 800, 20);
+		g2d.setColor(Color.red);
+		g2d.fillRect(0, 0, playedBarLength(vd), 20);
+		g2d.setColor(Color.black);
+		g2d.drawRect(0, 0, 799, 19);
+		File file = new File(path + "/" + guildid + ".png");
+		try {
+			ImageIO.write(bi, "png", file);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.out.println("failed miserably");
+		}
+		while (!file.exists()) {
+		}
+		// m.editMessage(eb.build()).addFile(file, guildid + ".png").complete();
+		Message fm = Voice.image_dump.sendFile(file, guildid + ".png").complete();
+		eb.setImage(fm.getAttachments().get(0).getUrl());
+		m.editMessage(eb.build()).complete();
+		// Voice.playermessages.put(guildid, channel.sendFile(file, guildid +
+		// ".png").embed(eb.build()).complete());
+		file.delete();
+	}
+
+	public int playedBarLength(VideoDetails vd) {
+		return (int) ((800.0 / (vd.lengthSeconds() * 50)) * (vd.lengthSeconds() * 50 - frames));
 	}
 
 	public void skip() {
