@@ -40,6 +40,7 @@ import bot.Module;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.audio.AudioReceiveHandler;
 import net.dv8tion.jda.api.audio.AudioSendHandler;
+import net.dv8tion.jda.api.entities.Emoji;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
@@ -50,6 +51,8 @@ import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
+import net.dv8tion.jda.api.interactions.components.Button;
+import net.dv8tion.jda.api.interactions.components.ButtonStyle;
 import net.dv8tion.jda.api.managers.AudioManager;
 
 public class Voice implements Module {
@@ -296,7 +299,30 @@ public class Voice implements Module {
 
 	@Override
 	public void run_button(ButtonClickEvent event) {
-		// TODO Auto-generated method stub
+		String id = event.getButton().getId();
+		if (!id.startsWith("pla") && !id.startsWith("pau")) {
+			return;
+		}
+		event.deferEdit().complete();
+		Button button = event.getButton();
+		String guildid = button.getId().substring(3);
+		String type = button.getId().substring(0, 3);
+		Member member = event.getMember();
+		if (!member.getVoiceState().inVoiceChannel()) {
+			return;
+		}
+		AudioManager am = Voice.connections.get(guildid);
+		ASH ash = Voice.handlers.get(guildid);
+		if (member.getVoiceState().getChannel().getIdLong() != am.getConnectedChannel().getIdLong()) {
+			return;
+		}
+		if (type.equals("pla")) {
+			ash.pause();
+			ash.playerMessage();
+		} else if (type.equals("pau")) {
+			ash.pause();
+			ash.playerMessage();
+		}
 
 	}
 
@@ -314,8 +340,7 @@ public class Voice implements Module {
 
 	@Override
 	public boolean has_button() {
-		// TODO Auto-generated method stub
-		return false;
+		return true;
 	}
 
 	@Override
@@ -413,10 +438,16 @@ class ASH implements AudioSendHandler {
 	private BufferedInputStream is;
 	private String guildid;
 	private String videoId = "";
+	Button playbutton;
+	Button pausebutton;
 
 	public ASH(String guildid) {
 		this.guildid = guildid;
 		path = Bot.path + "/videos/";
+		playbutton = Button.of(ButtonStyle.PRIMARY, "pla" + guildid,
+				Emoji.fromEmote("play", 914986126052294688l, false));
+		pausebutton = Button.of(ButtonStyle.PRIMARY, "pau" + guildid,
+				Emoji.fromEmote("pause", 914986213205749820l, false));
 	}
 
 	@Override
@@ -565,9 +596,10 @@ class ASH implements AudioSendHandler {
 		while (!file.exists()) {
 		}
 		// m.editMessage(eb.build()).addFile(file, guildid + ".png").complete();
+		Button button = (providing) ? pausebutton : playbutton;
 		Message fm = Voice.image_dump.sendFile(file, guildid + ".png").complete();
 		eb.setImage(fm.getAttachments().get(0).getUrl());
-		m.editMessage(eb.build()).complete();
+		m.editMessage(eb.build()).setActionRow(button).complete();
 		// Voice.playermessages.put(guildid, channel.sendFile(file, guildid +
 		// ".png").embed(eb.build()).complete());
 		file.delete();
@@ -575,6 +607,24 @@ class ASH implements AudioSendHandler {
 
 	public int playedBarLength(VideoDetails vd) {
 		return (int) ((800.0 / (vd.lengthSeconds() * 50)) * (vd.lengthSeconds() * 50 - frames));
+	}
+
+	public void pause() {
+		if (!providing) {
+			if (!Voice.queues.get(guildid).isEmpty()) {
+				providing = true;
+			} else if (videoId != null) {
+				// TODO make it play the last song again
+				// try {
+				// play(videoId);
+				// } catch (IOException e) {
+				// // TODO Auto-generated catch block
+				// e.printStackTrace();
+				// }
+			}
+		} else {
+			providing = false;
+		}
 	}
 
 	public void skip() {
