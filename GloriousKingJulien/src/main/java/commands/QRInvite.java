@@ -50,7 +50,19 @@ public class QRInvite implements Module {
 			Invite invite = message.getMentionedChannels().get(0).createInvite().complete();
 			try {
 				get_qr("https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + invite.getUrl());
-				channel.sendFile(new File("invite_qr.png")).queue();
+				channel.sendFile(new File("invite_qr.png")).complete();
+				new File("invite_qr.png").delete();
+			} catch (Exception | Error e) {
+				channel.sendMessage("Sorry, but i can't fulfill your request.");
+				e.printStackTrace();
+			}
+			return;
+		}
+		if (content.startsWith(prefix + "qrlink ")) {
+			content = content.substring(prefix.length()+"qrlink ".length());
+			try {
+				get_qr("https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" +content);
+				channel.sendFile(new File("invite_qr.png")).complete();
 				new File("invite_qr.png").delete();
 			} catch (Exception | Error e) {
 				channel.sendMessage("Sorry, but i can't fulfill your request.");
@@ -121,6 +133,7 @@ public class QRInvite implements Module {
 	@Override
 	public LinkedList<String> get_short_commands() {
 		LinkedList<String> short_commands = new LinkedList<>();
+		short_commands.add("qrlink");
 		return short_commands;
 	}
 
