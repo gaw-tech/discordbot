@@ -588,6 +588,7 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 		ignore.add("304587987956531201");// pherb
 		ignore.add("814844933813829652");// popopina
 		ignore.add("850353176862916608");// ibot
+		ignore.add("289864423768719372");//markies alt
 		if (ignore.contains(event.getUser().getId())) {
 			return;
 		}

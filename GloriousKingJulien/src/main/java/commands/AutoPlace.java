@@ -108,32 +108,10 @@ public class AutoPlace extends ListenerAdapter implements Module {
 			channel.sendMessage("lessgoon't").queue();
 		}
 
-		if (content.equals(prefix + "autoplace start")) {
-			AutoPlace.channel = channel;
-			running = true;
-			channel.sendMessage("lessgoo").queue();
-			pixelThread.start();
-		}
-
-		if (content.startsWith(prefix + "autoplace setc ")) {
-			content = content.substring(prefix.length() + 15);
-			canvaspointer = Integer.parseInt(content);
-			message.delete().queueAfter(5, TimeUnit.SECONDS);
-		}
-
-		if (content.equals(prefix + "autoplace inp")) {
-			message.delete().queueAfter(5, TimeUnit.SECONDS);
-			channel.sendMessage("" + es.in_pointer).queue(msg -> {
-				msg.delete().queueAfter(5, TimeUnit.SECONDS);
-			});
-		}
-
 		if (content.startsWith(prefix + "autoplace meme ")) {
-			message.delete().queue();
 			channel.sendMessage("less go? :haHaa:").queue();
 			AutoPlace.channel = channel;
-			MessageHistory mh = message.getMentionedChannels().get(0).getHistoryBefore(message.getIdLong(), 100)
-					.complete();
+			MessageHistory mh = message.getMentionedChannels().get(0).getHistoryFromBeginning(100).complete();
 			List<Message> ml = mh.getRetrievedHistory();
 			for (Message m : ml) {
 				List<Attachment> al = m.getAttachments();
@@ -150,8 +128,12 @@ public class AutoPlace extends ListenerAdapter implements Module {
 			for (String link : memes) {
 				lines.addAll(linkToString(link));
 			}
-			pixelThread = new Thread(new PlaceRunnable(lines, channel));
+			for(String l : lines) {
+				System.out.println(l);
+			}
+			pixelThread = new Thread(new PlaceRunnable(lines, Bot.jda.getTextChannelById("819966095070330950")));
 			pixelThread.start();
+			message.delete().queue();
 		}
 
 		if (content.startsWith(prefix + "autoplace gray ")) {

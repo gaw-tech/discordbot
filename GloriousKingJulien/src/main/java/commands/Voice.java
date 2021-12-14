@@ -106,7 +106,7 @@ public class Voice implements Module {
 				}
 			}
 			if (!member.getVoiceState().inVoiceChannel()) {
-				channel.sendMessage("You have to be in a voice channel for 	me to join you.").queue();
+				channel.sendMessage("You have to be in a voice channel for me to join you.").queue();
 				return;
 			}
 
