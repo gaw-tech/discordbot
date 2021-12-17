@@ -263,11 +263,6 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 		if (content.equals(prefix + "buttonboard") || content.equals(prefix + "bb")) {
 			BgscoreUser[] toplist = printBest(currentBgame.serverId);
 
-			// if not enough ppl
-			if (toplist.length < 10) {
-				channel.sendMessage("Not enough ppl on the scoreboard").queue();
-			}
-
 			String nickname = "";
 			String users = "";
 			String scores = "";
@@ -278,7 +273,7 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 			eb.setColor(1);
 			eb.setDescription("Top 10 Players of the button game.\n");
 
-			for (int i = 0; i < 10; i++) {
+			for (int i = 0; i < 10 && i < toplist.length; i++) {
 				if (jda.getGuildById(event.getGuild().getId()).getMemberById(toplist[i].id) != null) {
 					nickname = (jda.getGuildById(event.getGuild().getId()).getMemberById(toplist[i].id)
 							.getNickname() != null)
