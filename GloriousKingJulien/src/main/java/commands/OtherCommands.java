@@ -91,7 +91,7 @@ public class OtherCommands implements Module {
 			}
 			// list servers
 			if (content.equals(prefix + "servers")) {
-				out = "";
+				out = ""+event.getJDA().getGuilds().size()+"\n";
 				event.getJDA().getGuilds().forEach(guild -> {
 					out = out + guild.getName() + " " + guild.getId() + "\n";
 				});
@@ -166,7 +166,7 @@ public class OtherCommands implements Module {
 					Attachment atch = message.getAttachments().get(0);
 					if (atch.getFileExtension().equals("java") || atch.getFileExtension().equals("txt")) {
 						String dataname = content.substring(prefix.length()).split(" ")[1];
-						File file = atch.downloadToFile(new File(Bot.path + "/commands/" + dataname + ".java")).get();
+						atch.downloadToFile(new File(Bot.path + "/commands/" + dataname + ".java")).get();
 						switch (MainListener.load(dataname)) {
 						case -1: {
 							channel.sendMessage("Loading failed.").queue();
