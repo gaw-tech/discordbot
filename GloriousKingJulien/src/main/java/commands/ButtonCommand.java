@@ -575,6 +575,13 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 		if (!event.getButton().getId().startsWith("bgb")) {
 			return;
 		}
+		// if its an old button (button game not started or not equal to the newest
+		// button message) delete it
+		if (!servers.containsKey(event.getGuild().getIdLong())
+				|| servers.get(event.getGuild().getIdLong()).message.getIdLong() != event.getMessageIdLong()) {
+			event.getMessage().delete().queue();
+			return;
+		}
 		InteractionHook ih = event.deferReply().setEphemeral(true).complete();
 		LinkedList<String> ignore = new LinkedList<>();
 		ignore.add("802472545172455444");// za
@@ -583,7 +590,7 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 		ignore.add("304587987956531201");// pherb
 		ignore.add("814844933813829652");// popopina
 		ignore.add("850353176862916608");// ibot
-		ignore.add("289864423768719372");//markies alt
+		ignore.add("289864423768719372");// markies alt
 		if (ignore.contains(event.getUser().getId())) {
 			return;
 		}
