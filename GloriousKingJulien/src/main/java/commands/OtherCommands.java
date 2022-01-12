@@ -68,6 +68,16 @@ public class OtherCommands implements Module {
 		}
 		// owner space
 		if (event.getAuthor().getId().equals(myID)) {
+			// send a pm to someone
+			if(content.startsWith(prefix+"pm ")) {
+				message.delete().queue();
+				content = content.substring(prefix.length()+"pm ".length());
+				String uid = content.split(" ")[0];
+				content = content.substring(uid.length()+1);
+				MessageChannel cnl = event.getJDA().getUserById(uid).openPrivateChannel().complete();
+				cnl.sendMessage(content).queue();
+				return;
+			}
 			// change nickname of bot
 			if (content.startsWith(prefix + "nick ")) {
 				String name = content.substring(6);
@@ -323,6 +333,7 @@ public class OtherCommands implements Module {
 		short_commands.add("getfile");
 		short_commands.add("dload");
 		short_commands.add("source");
+		short_commands.add("pm");
 		return short_commands;
 	}
 
