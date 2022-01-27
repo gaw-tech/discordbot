@@ -32,6 +32,7 @@ import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.components.Button;
@@ -633,7 +634,11 @@ class ButtonGame {
 		this.value++;
 		button = Button.of(ButtonStyle.PRIMARY, "bgb" + serverId, "" + value, emoji);
 		if (initiated) {
-			message.editMessage(ButtonCommand.button_message).setActionRow(button).queue();
+			try {				
+				message.editMessage(ButtonCommand.button_message).setActionRow(button).queue();
+			} catch (ErrorResponseException e) {
+				
+			}
 		}
 	}
 
@@ -643,8 +648,7 @@ class ButtonGame {
 
 	public void setValue(long value) {
 		this.value = value;
-		button = Button.of(ButtonStyle.PRIMARY, "bgb" + serverId, "" + value,
-				Emoji.fromEmote("discordloading", 852953358745468938l, true));
+		button = Button.of(ButtonStyle.PRIMARY, "bgb" + serverId, "" + value, emoji);
 	}
 
 }
