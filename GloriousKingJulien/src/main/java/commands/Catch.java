@@ -113,7 +113,11 @@ public class Catch extends ListenerAdapter implements Module {
 		}
 
 		// cooldown is still active or self steal
-		Message msg = event.getChannel().retrieveMessageById(event.getMessageId()).complete();
+		Message msg = null;
+		try {
+			msg = event.getChannel().retrieveMessageById(event.getMessageId()).complete();
+		} catch (ErrorResponseException e) {
+		}
 		if (msg != null && msg.getAuthor().getIdLong() == servers.get(event.getGuild().getIdLong()).itemholder) {
 			messagematch(event);
 		}
@@ -145,7 +149,7 @@ public class Catch extends ListenerAdapter implements Module {
 				.queueAfter(new Random().nextInt(10), TimeUnit.SECONDS, (msg) -> {
 					servers.get(event.getGuild().getIdLong()).oldmessage = msg;
 				});
-		//send message to log 
+		// send message to log
 		((MessageChannel) event.getJDA().getGuildChannelById(897075459739775027L))
 				.sendMessage(event.getUser().getAsMention() + "(" + event.getUser().getName() + ", "
 						+ event.getMember().getNickname() + ") stole the thing.")
