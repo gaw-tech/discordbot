@@ -144,7 +144,7 @@ public class ServerStats extends ListenerAdapter implements Module {
 			eb.addField("Messages sent since midnight:",
 					"by bots: " + server.daymessagesbot + "\nby humans: " + server.daymessagesuser, false);
 			eb.setFooter("Tracking since " + starttime.toString("dd.MM.yyyy"));
-			channel.sendMessage(eb.build()).queue(msg -> {
+			channel.sendMessageEmbeds(eb.build()).queue(msg -> {
 				msg.delete().queueAfter(1, TimeUnit.MINUTES);
 			});
 		}

@@ -63,7 +63,7 @@ public class Epic extends ListenerAdapter implements Module {
 					});
 					EPICdata latest = getByHour(dt.getHourOfDay());
 					EmbedBuilder eb = latest.makeEmbed();
-					channel.sendMessage(eb.build()).queue();
+					channel.sendMessageEmbeds(eb.build()).queue();
 					embed = eb;
 					hourofday = dt.getHourOfDay();
 
@@ -71,7 +71,7 @@ public class Epic extends ListenerAdapter implements Module {
 					e.printStackTrace();
 				}
 			} else {
-				channel.sendMessage(embed.build()).queue();
+				channel.sendMessageEmbeds(embed.build()).queue();
 			}
 		}
 	}

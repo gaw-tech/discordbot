@@ -232,7 +232,7 @@ public class MainListener extends ListenerAdapter {
 					String nickname = (event.getMember().getNickname() != null) ? event.getMember().getNickname()
 							: event.getMember().getEffectiveName();
 					eb.setFooter("Summoned by: " + nickname, event.getAuthor().getAvatarUrl());
-					channel.sendMessage(eb.build()).queue();
+					channel.sendMessageEmbeds(eb.build()).queue();
 				} else {
 					String[] split_help = content.split(" ");
 					String key = "";
@@ -250,7 +250,7 @@ public class MainListener extends ListenerAdapter {
 					String nickname = (event.getMember().getNickname() != null) ? event.getMember().getNickname()
 							: event.getMember().getEffectiveName();
 					eb.setFooter("Summoned by: " + nickname, event.getAuthor().getAvatarUrl());
-					channel.sendMessage(eb.build()).queue();
+					channel.sendMessageEmbeds(eb.build()).queue();
 				}
 			}
 			// owner only

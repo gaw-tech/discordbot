@@ -46,11 +46,11 @@ dependencies {
     //testImplementation 'junit:junit:4.12'
     
     //compile
-    compile 'net.dv8tion:JDA:4.3.0_277'
+    compile 'net.dv8tion:JDA:4.4.0_352'
     compile 'ch.qos.logback:logback-classic:1.1.2'
     compile 'joda-time:joda-time:2.10.8'
 
-    shadow 'net.dv8tion:JDA:4.3.0_277'
+    shadow 'net.dv8tion:JDA:4.4.0_352'
     shadow localGroovy()
     shadow gradleApi()
     

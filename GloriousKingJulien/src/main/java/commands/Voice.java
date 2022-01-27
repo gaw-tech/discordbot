@@ -221,7 +221,7 @@ public class Voice implements Module {
 					}
 				}
 				eb.setDescription(songs);
-				channel.sendMessage(eb.build()).queue();
+				channel.sendMessageEmbeds(eb.build()).queue();
 			}
 			return;
 		}
@@ -599,7 +599,7 @@ class ASH implements AudioSendHandler {
 		Button button = (providing) ? pausebutton : playbutton;
 		Message fm = Voice.image_dump.sendFile(file, guildid + ".png").complete();
 		eb.setImage(fm.getAttachments().get(0).getUrl());
-		m.editMessage(eb.build()).setActionRow(button).complete();
+		m.editMessageEmbeds(eb.build()).setActionRow(button).complete();
 		// Voice.playermessages.put(guildid, channel.sendFile(file, guildid +
 		// ".png").embed(eb.build()).complete());
 		file.delete();

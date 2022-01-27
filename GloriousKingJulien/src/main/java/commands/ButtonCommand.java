@@ -295,7 +295,7 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 			nickname = (event.getMember().getNickname() != null) ? event.getMember().getNickname()
 					: event.getMember().getEffectiveName();
 			eb.setFooter("Summoned by: " + nickname, event.getAuthor().getAvatarUrl());
-			channel.sendMessage(eb.build()).queue();
+			channel.sendMessageEmbeds(eb.build()).queue();
 		}
 
 		if (content.equals(prefix + "ba") && event.getAuthor().getAsTag().equals("Georg#3258")) {
@@ -334,7 +334,7 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 			nickname = (event.getMember().getNickname() != null) ? event.getMember().getNickname()
 					: event.getMember().getEffectiveName();
 			eb.setFooter("Summoned by: " + nickname, event.getAuthor().getAvatarUrl());
-			channel.sendMessage(eb.build()).queue();
+			channel.sendMessageEmbeds(eb.build()).queue();
 		}
 
 		if (content.equals(prefix + "bs")) {

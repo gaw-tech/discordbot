@@ -258,7 +258,7 @@ public class Catch extends ListenerAdapter implements Module {
 			nickname = (event.getMember().getNickname() != null) ? event.getMember().getNickname()
 					: event.getMember().getEffectiveName();
 			eb.setFooter("Summoned by: " + nickname, event.getAuthor().getAvatarUrl());
-			channel.sendMessage(eb.build()).queue();
+			channel.sendMessageEmbeds(eb.build()).queue();
 		}
 
 		if (content.equals(prefix + "ca") && event.getAuthor().getAsTag().equals("Georg#3258")) {
@@ -297,7 +297,7 @@ public class Catch extends ListenerAdapter implements Module {
 			nickname = (event.getMember().getNickname() != null) ? event.getMember().getNickname()
 					: event.getMember().getEffectiveName();
 			eb.setFooter("Summoned by: " + nickname, event.getAuthor().getAvatarUrl());
-			channel.sendMessage(eb.build()).queue();
+			channel.sendMessageEmbeds(eb.build()).queue();
 		}
 
 		if (content.equals(prefix + "cs")) {
@@ -356,7 +356,7 @@ public class Catch extends ListenerAdapter implements Module {
 								: jda.getUserById(cg.itemholder).getAsMention()) + "\nTag: " + cg.itemholdertag,
 						true);
 			}
-			event.getChannel().sendMessage(eb.build()).queue();
+			event.getChannel().sendMessageEmbeds(eb.build()).queue();
 		}
 	}
 

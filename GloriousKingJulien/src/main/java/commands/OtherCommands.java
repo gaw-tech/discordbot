@@ -64,7 +64,7 @@ public class OtherCommands implements Module {
 			EmbedBuilder eb = new EmbedBuilder();
 			eb.setDescription("Repo of <@381154302720213002>'s bot.");
 			eb.addField("Link:", "https://github.com/gaw-tech/discordbot", true);
-			channel.sendMessage(eb.build()).queue();
+			channel.sendMessageEmbeds(eb.build()).queue();
 		}
 		// owner space
 		if (event.getAuthor().getId().equals(myID)) {

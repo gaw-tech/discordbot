@@ -65,7 +65,7 @@ public class Apod extends ListenerAdapter implements Module {
 				eb.setImage(hdurl);
 				eb.setFooter("NASA APIs", "https://api.nasa.gov/assets/img/favicons/favicon-192.png");
 				eb.setAuthor("Astronomy Picture Of the Day", "https://apod.nasa.gov/apod");
-				channel.sendMessage(eb.build()).queue();
+				channel.sendMessageEmbeds(eb.build()).queue();
 
 			} catch (IOException | JsonException e) {
 				// TODO Auto-generated catch block

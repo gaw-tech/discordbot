@@ -51,7 +51,7 @@ public class Pisrn implements Module {
 				String nickname = (event.getMember().getNickname() != null) ? event.getMember().getNickname()
 						: event.getMember().getEffectiveName();
 				eb.setFooter("Summoned by: " + nickname, event.getAuthor().getAvatarUrl());
-				channel.sendMessage(eb.build()).queue();
+				channel.sendMessageEmbeds(eb.build()).queue();
 			} catch (Exception | Error e) {
 				// TODO
 				e.printStackTrace();

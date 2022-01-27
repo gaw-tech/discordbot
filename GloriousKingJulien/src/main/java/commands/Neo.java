@@ -74,7 +74,7 @@ public class Neo extends ListenerAdapter implements Module {
 					e.printStackTrace();
 				}
 			}
-			channel.sendMessage(this.data.removeFirst().toEmbed().build()).queue();
+			channel.sendMessageEmbeds(this.data.removeFirst().toEmbed().build()).queue();
 		}
 	}
 
