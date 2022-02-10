@@ -71,7 +71,7 @@ dependencies {
 
 shadowJar {
    archiveBaseName.set('Bot')
-   archiveVersion.set('3.21')
+   archiveVersion.set('3.23')
    exclude 'src.main.java.commands'
 }
 

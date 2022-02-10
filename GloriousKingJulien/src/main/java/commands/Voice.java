@@ -162,9 +162,10 @@ public class Voice implements Module {
 					content = content.substring(i + 1);
 				}
 			}
-			if (!validlink) {
+			if (!validlink) { // bad linke TODO fix the reaction
 				message.addReaction(event.getJDA().getEmoteById("779883525800722432")).queue();
 			} else {
+				message.delete().queue();
 				ASH ash = handlers.get(guildid);
 				LinkedList<String> queue = queues.get(guildid);
 				// now lets check if we already have it downloaded
@@ -239,7 +240,7 @@ public class Voice implements Module {
 			} else {
 				EmbedBuilder eb = new EmbedBuilder();
 				eb.setTitle("Player");
-				Message m = channel.sendMessage(eb.build()).complete();
+				Message m = channel.sendMessageEmbeds(eb.build()).complete();
 				Message tmp = null;
 				if (Voice.playermessages.containsKey(guildid)) {
 					tmp = Voice.playermessages.get(guildid);
@@ -552,7 +553,7 @@ class ASH implements AudioSendHandler {
 		eb.setImage("attachment://timebar.png");
 		while (!file.exists()) {
 		}
-		channel.sendFile(file, "timebar.png").embed(eb.build()).complete();
+		channel.sendFile(file, "timebar.png").setEmbeds(eb.build()).complete();
 		file.delete();
 	}
 
@@ -759,6 +760,7 @@ class YTDL {
 				}).async();
 		Response<File> vresponse = downloader.downloadVideoFile(vrequest);
 		File file = vresponse.data();
+		System.out.println(file);
 		String args = "ffmpeg -y -v error -i " + file.getAbsolutePath()
 				+ " -strict experimental -vn -sn -ac 2 -ar 48000 -b 1536000 -f s16be "
 				+ (new File(Bot.path + "/videos/" + videoId).getAbsolutePath());

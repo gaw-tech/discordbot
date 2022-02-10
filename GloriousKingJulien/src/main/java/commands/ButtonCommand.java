@@ -255,7 +255,7 @@ public class ButtonCommand extends ListenerAdapter implements Module {
 				// updates the msgId of the game. Its kinda wierd because i can't the
 				// currenBgame variable in this block.
 				ButtonGame cbg = servers.get(msg.getGuild().getIdLong());
-				if (cbg.message != null)
+				if (cbg != null && cbg.message != null)
 					cbg.message.delete().queue();
 				cbg.message = msg;
 			});
@@ -634,10 +634,10 @@ class ButtonGame {
 		this.value++;
 		button = Button.of(ButtonStyle.PRIMARY, "bgb" + serverId, "" + value, emoji);
 		if (initiated) {
-			try {				
+			try {
 				message.editMessage(ButtonCommand.button_message).setActionRow(button).queue();
 			} catch (ErrorResponseException e) {
-				
+
 			}
 		}
 	}
