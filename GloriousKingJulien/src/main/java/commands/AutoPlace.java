@@ -14,7 +14,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Random;
 
 import javax.imageio.ImageIO;
 
@@ -128,7 +128,7 @@ public class AutoPlace extends ListenerAdapter implements Module {
 			for (String link : memes) {
 				lines.addAll(linkToString(link));
 			}
-			for(String l : lines) {
+			for (String l : lines) {
 				System.out.println(l);
 			}
 			pixelThread = new Thread(new PlaceRunnable(lines, Bot.jda.getTextChannelById("819966095070330950")));
@@ -151,14 +151,15 @@ public class AutoPlace extends ListenerAdapter implements Module {
 		}
 
 		if (content.startsWith(prefix + "autoplace andri")) {
-			if (la != null && running) {
-				Bot.jda.removeEventListener(la);
+			if (la != null) {
+				Bot.jda.removeEventListener((ListenerAdapter) la);
 				running = false;
 				Bot.jda.cancelRequests();
 				la = null;
 				channel.sendMessage("lessgo").queue();
 			} else {
 				la = new APLA();
+				running = true;
 				Bot.jda.addEventListener(la);
 				channel.sendMessage("nono").queue();
 			}
@@ -365,6 +366,8 @@ class PlaceRunnable implements Runnable {
 
 class APLA extends ListenerAdapter {
 
+	Random rd = new Random();
+
 	@Override
 	public void onMessageReceived(MessageReceivedEvent event) {
 		if (event.getAuthor().getId().equals("817846061347242026")) {
@@ -372,18 +375,20 @@ class APLA extends ListenerAdapter {
 			if (content.toLowerCase().startsWith(".place setpixel")) {
 				String[] split = content.split(" ");
 				String nr = split[4];
-				String x = split[2];
-				String y = split[3];
-				Color c = new Color(Integer.valueOf(nr.substring(1, 3), 16), Integer.valueOf(nr.substring(3, 5), 16),
-						Integer.valueOf(nr.substring(5, 7), 16));
+				int x = 999 - Integer.parseInt(split[2]);
+				int y = 999 - Integer.parseInt(split[3]);
+				Color c = new Color(255 - Integer.valueOf(nr.substring(1, 3), 16),
+						255 - Integer.valueOf(nr.substring(3, 5), 16), 255 - Integer.valueOf(nr.substring(5, 7), 16));
 				int sum = (c.getRed() + c.getGreen() + c.getBlue()) / 3;
-				event.getMessage()
-						.reply(".place setpixel " + x + " " + y + " "
-								+ String.format("#%02x%02x%02x", 255 - c.getRed(), 255 - c.getGreen(),
-										255 - c.getBlue())
-								+ " | <t:" + (1800 + event.getMessage().getTimeCreated().toEpochSecond()) + ":R>")
-						.queueAfter(30, TimeUnit.MINUTES);
+				event.getChannel().sendMessage(".place setpixel " + x + " " + y + " "
+						+ String.format("#%02x%02x%02x", limit(c.getRed() - 10 + rd.nextInt(21)),
+								limit(c.getGreen() - 10 + rd.nextInt(21)), limit(c.getBlue() - 10 + rd.nextInt(21)))
+						+ " | <t:" + (0 + event.getMessage().getTimeCreated().toEpochSecond()) + ":R>").queue();
 			}
 		}
 	};
+
+	static int limit(int i) {
+		return (i > 255) ? 255 : (i < 0) ? 0 : i;
+	}
 }

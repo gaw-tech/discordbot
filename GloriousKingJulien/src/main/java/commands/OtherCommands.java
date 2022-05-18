@@ -26,6 +26,7 @@ import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 
 public class OtherCommands implements Module {
@@ -69,11 +70,11 @@ public class OtherCommands implements Module {
 		// owner space
 		if (event.getAuthor().getId().equals(myID)) {
 			// send a pm to someone
-			if(content.startsWith(prefix+"pm ")) {
+			if (content.startsWith(prefix + "pm ")) {
 				message.delete().queue();
-				content = content.substring(prefix.length()+"pm ".length());
+				content = content.substring(prefix.length() + "pm ".length());
 				String uid = content.split(" ")[0];
-				content = content.substring(uid.length()+1);
+				content = content.substring(uid.length() + 1);
 				MessageChannel cnl = event.getJDA().getUserById(uid).openPrivateChannel().complete();
 				cnl.sendMessage(content).queue();
 				return;
@@ -101,7 +102,7 @@ public class OtherCommands implements Module {
 			}
 			// list servers
 			if (content.equals(prefix + "servers")) {
-				out = ""+event.getJDA().getGuilds().size()+"\n";
+				out = "" + event.getJDA().getGuilds().size() + "\n";
 				event.getJDA().getGuilds().forEach(guild -> {
 					out = out + guild.getName() + " " + guild.getId() + "\n";
 				});
@@ -165,8 +166,8 @@ public class OtherCommands implements Module {
 				channel.sendFile(file).queue();
 			}
 			// get file
-			if (content.startsWith(prefix+"getfile ")){
-				File file = new File(content.substring(prefix.length()+"getfile ".length()));
+			if (content.startsWith(prefix + "getfile ")) {
+				File file = new File(content.substring(prefix.length() + "getfile ".length()));
 				channel.sendFile(file).queue();
 			}
 			// load a module from discord
@@ -233,7 +234,7 @@ public class OtherCommands implements Module {
 						} else {
 							System.out.println(g.getName() + " could not retrieve any slash commands");
 						}
-					} catch(Exception e) {
+					} catch (Exception e) {
 						e.printStackTrace();
 					}
 				}
@@ -257,6 +258,33 @@ public class OtherCommands implements Module {
 				channel.sendMessage("Set the channels for slash commands.").queue(msg -> {
 					msg.delete().queueAfter(15, TimeUnit.SECONDS);
 				});
+			}
+			// list event listeners
+			if (content.equals(prefix + "other listeners")) {
+				channel.sendMessage(jda.getRegisteredListeners() + "").queue();
+			}
+			// remove an event listener... i really hope it retruns them always in the same
+			// order.
+			if (content.startsWith(prefix + "other remove listener ")) {
+				content = content.substring(prefix.length() + "other remove listener ".length());
+				int i = Integer.parseInt(content);
+				jda.removeEventListener(jda.getRegisteredListeners().get(i));
+				channel.sendMessage("yeetet listener").queue();
+			}
+			// empty queued messages and stuff
+			if (content.equals(prefix + "other clear queue")) {
+				jda.cancelRequests();
+				channel.sendMessage("cleared queue?").queue();
+			}
+
+			if (content.startsWith(prefix + "spam ")) {
+				message.delete().queue();
+				content = content.substring(prefix.length() + "spam ".length());
+				int n = Integer.parseInt(content.split(" ")[0]);
+				content = content.substring(content.split(" ")[0].length());
+				for (int i = 0; i < n; i++) {
+					channel.sendMessage(content).queue();
+				}
 			}
 		}
 	}
@@ -334,6 +362,7 @@ public class OtherCommands implements Module {
 		short_commands.add("dload");
 		short_commands.add("source");
 		short_commands.add("pm");
+		short_commands.add("spam");
 		return short_commands;
 	}
 
