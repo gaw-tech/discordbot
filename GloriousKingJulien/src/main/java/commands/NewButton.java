@@ -128,13 +128,38 @@ public class NewButton implements Module {
 
 	@Override
 	public void run_reaction(MessageReactionAddEvent event) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void run_slash(SlashCommandEvent event) {
-		// TODO Auto-generated method stub
+		String name = event.getName();
+		MessageChannel channel = event.getChannel();
+		long server_id = event.getGuild().getIdLong();
+		// call the button
+		if (name.equals("button")) {
+			call_button(channel, server_id);
+			event.deferReply().queue(ih -> {
+				ih.deleteOriginal().queue();
+			});
+		}
+
+		// scoreboard
+		if (name.equals("buttonboard")) {
+			InteractionHook ih = event.deferReply().complete();
+			print_top_10(ih, server_id);
+		}
+
+		// check scores
+		if (name.equals("buttonscore")) {
+			if (servers.containsKey(server_id)) {
+				InteractionHook ih = event.deferReply().complete();
+				servers.get(server_id).print_user_score(event.getMember().getIdLong(), ih);
+			} else {
+				event.deferReply().queue(ih -> {
+					ih.deleteOriginal().queue();
+				});
+			}
+		}
 	}
 
 	@Override
@@ -162,8 +187,7 @@ public class NewButton implements Module {
 
 	@Override
 	public boolean has_slash() {
-		// TODO Auto-generated method stub
-		return false;
+		return true;
 	}
 
 	@Override
@@ -173,26 +197,38 @@ public class NewButton implements Module {
 
 	@Override
 	public boolean has_basic_help() {
-		// TODO Auto-generated method stub
-		return false;
+		return true;
 	}
 
 	@Override
 	public EmbedBuilder get_help() {
-		// TODO Auto-generated method stub
-		return null;
+		EmbedBuilder eb = new EmbedBuilder();
+		eb.setTitle("Help Button");
+		eb.addField("Description:",
+				"Welcome to the button game. The goal of the button game is to claim as much points as possible. This is done by pressing the \"button\". Note that your score is the highest score you claimed the button at, so if you claim the button your new score is the value of the button.",
+				true);
+		eb.addField("Usage:",
+				"`" + prefix + "b` get the button message\n`" + prefix
+						+ "bb` get a list with the top 10 players of the button game\n`" + prefix
+						+ "bs` tells you your current score and your rank in the button game\n`" + prefix
+						+ "bs <user id>` returns the score and rank of the mentioned user",
+				false);
+		return eb;
 	}
 
 	@Override
 	public HashMap<String, String> get_slash() {
-		// TODO Auto-generated method stub
-		return null;
+		HashMap<String, String> slash_commands = new HashMap<>();
+		slash_commands.put("button", "Sends the button from the ButtonGame.");
+		slash_commands.put("buttonscore", "Tells you your rank on the ButtonGame scoreboard.");
+		slash_commands.put("buttonboard", "Lists the top 10 players of the ButtonGame.");
+		return slash_commands;
 	}
 
 	@Override
 	public Field get_basic_help() {
-		// TODO Auto-generated method stub
-		return null;
+		return new Field(topname, "`" + prefix + "b` get the button\n`" + prefix + "bb` shows the ButtonBoard\n`"
+				+ prefix + "bs` your rank in the button game", true, true);
 	}
 
 	@Override
@@ -255,6 +291,13 @@ public class NewButton implements Module {
 		ButtonGame bg = servers.get(server_id);
 		if (bg != null) {
 			bg.print_top_10(channel);
+		}
+	}
+	
+	private void print_top_10(InteractionHook ih, long server_id) {
+		ButtonGame bg = servers.get(server_id);
+		if (bg != null) {
+			bg.print_top_10(ih);
 		}
 	}
 
@@ -414,6 +457,30 @@ class ButtonGame {
 		eb.setFooter("", Bot.jda.getSelfUser().getAvatarUrl());
 		channel.sendMessageEmbeds(eb.build()).queue();
 	}
+	
+	protected void print_top_10(InteractionHook ih) {
+		long[] sorted_users = sorted_users();
+		EmbedBuilder eb = new EmbedBuilder();
+		eb.setTitle("ButtonBoard");
+		eb.setColor(1); // maybe change that to a fun color?
+		eb.setDescription(
+				"Top " + ((sorted_users.length < 10) ? sorted_users.length : 10) + " Players of the button game.\n");
+
+		String users = "";
+		String scores = "";
+		String rank = "";
+
+		for (int i = 0; i < 10 && i < sorted_users.length; i++) {
+			users = users + "<@" + sorted_users[i] + ">:\n";
+			scores = scores + this.scores.get(sorted_users[i]) + "\n";
+			rank = rank + "**" + (i + 1) + ".**\n";
+		}
+		eb.addField("", "**Rank:**\n" + rank, true);
+		eb.addField("", "**Player:** \n" + users, true);
+		eb.addField("", "**Score:** \n" + scores, true);
+		eb.setFooter("", Bot.jda.getSelfUser().getAvatarUrl());
+		ih.editOriginalEmbeds(eb.build()).queue();
+	}
 
 	protected long[] sorted_users() {
 		long[] sorted_users = new long[scores.size()];
@@ -454,5 +521,21 @@ class ButtonGame {
 		}
 		eb.appendDescription("Found no score for the id: " + user_id);
 		channel.sendMessageEmbeds(eb.build()).queue();
+	}
+	
+	protected void print_user_score(long user_id, InteractionHook ih) {
+		long[] sorted_users = sorted_users();
+		int rank = 0;
+		EmbedBuilder eb = new EmbedBuilder();
+		for (; rank < sorted_users.length; rank++) {
+			if (sorted_users[rank] == user_id) {
+				rank++;
+				eb.appendDescription("<@" + user_id + "> has `" + scores.get(user_id) + "` points and is nr. " + rank);
+				ih.editOriginalEmbeds(eb.build()).queue();
+				return;
+			}
+		}
+		eb.appendDescription("Found no score for the id: " + user_id);
+		ih.editOriginalEmbeds(eb.build()).queue();
 	}
 }
