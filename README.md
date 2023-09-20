@@ -1,5 +1,5 @@
 # discordbot
-My crappy discordbot.
+My first discordbot.
 
 For the bot to work there must be a file called "config.txt" in the same directory as the main funcion.
 In this file there must be the following lines:
