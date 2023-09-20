@@ -499,7 +499,7 @@ class ASH implements AudioSendHandler {
 
 		}
 		try {
-			bytes = is.readNBytes(framesize);
+			bytes = is.readNBytes(framesize);//is.readNBytes(framesize);
 			frames--;
 		} catch (IOException e) {
 			System.out.println("frames: " + frames);
@@ -764,10 +764,10 @@ class YTDL {
 		String args = "ffmpeg -y -v error -i " + file.getAbsolutePath()
 				+ " -strict experimental -vn -sn -ac 2 -ar 48000 -b 1536000 -f s16be "
 				+ (new File(Bot.path + "/videos/" + videoId).getAbsolutePath());
+		long time = System.currentTimeMillis();
 		ProcessBuilder pb = new ProcessBuilder(args.split(" ")).redirectError(new File(Bot.path + "/videos/error.txt"));
 		Process p = pb.start();
 		System.out.println(Arrays.toString(args.split(" ")));
-		long time = System.currentTimeMillis();
 		while (p.isAlive()) {
 
 		}

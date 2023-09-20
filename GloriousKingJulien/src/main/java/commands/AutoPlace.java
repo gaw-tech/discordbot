@@ -108,6 +108,24 @@ public class AutoPlace extends ListenerAdapter implements Module {
 			channel.sendMessage("lessgoon't").queue();
 		}
 
+		if (content.equals(prefix + "autoplace draw")) {
+			List<Attachment> al = message.getAttachments();
+			if (al != null && !al.isEmpty()) {
+				Attachment atch = message.getAttachments().get(0);
+				if (atch.isImage() && atch.getFileExtension().equals("png")) {
+					memes.add(atch.getUrl());
+					LinkedList<String> lines = new LinkedList<>();
+					lines.addAll(linkToString(atch.getUrl()));
+					System.out.println("got picture");
+					running = true;
+					pixelThread = new Thread(
+							new PlaceRunnable(lines, Bot.jda.getTextChannelById("819966095070330950")));
+					pixelThread.start();
+				}
+			}
+			message.delete().queue();
+		}
+
 		if (content.startsWith(prefix + "autoplace meme ")) {
 			channel.sendMessage("less go? :haHaa:").queue();
 			AutoPlace.channel = channel;

@@ -36,33 +36,33 @@ repositories {
 }
 
 dependencies {
-    // This dependency is exported to consumers, that is to say found on their compile classpath.
+    // This dependency is exported to consumers, that is to say found on their implementation classpath.
     api 'org.apache.commons:commons-math3:3.6.1'
 
-    // This dependency is used internally, and not exposed to consumers on their own compile classpath.
+    // This dependency is used internally, and not exposed to consumers on their own implementation classpath.
     implementation 'com.google.guava:guava:28.2-jre'
 
     // Use JUnit test framework
     //testImplementation 'junit:junit:4.12'
     
-    //compile
-    compile 'net.dv8tion:JDA:4.4.0_352'
-    compile 'ch.qos.logback:logback-classic:1.1.2'
-    compile 'joda-time:joda-time:2.10.8'
+    //implementation
+    implementation 'net.dv8tion:JDA:4.4.0_352'
+    implementation 'ch.qos.logback:logback-classic:1.1.2'
+    implementation 'joda-time:joda-time:2.10.8'
 
     shadow 'net.dv8tion:JDA:4.4.0_352'
     shadow localGroovy()
     shadow gradleApi()
     
-    compile 'org.jdom:jdom2:2.0.6'
-    compile 'org.ow2.asm:asm:6.0'
-    compile 'org.ow2.asm:asm-commons:6.0'
-    compile 'commons-io:commons-io:2.4'
-    compile 'org.apache.ant:ant:1.9.4'
-    compile 'org.codehaus.plexus:plexus-utils:2.0.6'
+    implementation 'org.jdom:jdom2:2.0.6'
+    implementation 'org.ow2.asm:asm:6.0'
+    implementation 'org.ow2.asm:asm-commons:6.0'
+    implementation 'commons-io:commons-io:2.4'
+    implementation 'org.apache.ant:ant:1.9.4'
+    implementation 'org.codehaus.plexus:plexus-utils:2.0.6'
     
     implementation 'com.github.cliftonlabs:json-simple:3.1.0'
-    compile 'com.github.sealedtx:java-youtube-downloader:3.0.2'
+    implementation 'com.github.sealedtx:java-youtube-downloader:3.0.2'
     implementation 'com.github.sealedtx:java-youtube-downloader:3.0.2'
 
 }
