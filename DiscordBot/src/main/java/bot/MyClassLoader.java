@@ -23,6 +23,7 @@ public class MyClassLoader extends ClassLoader {
 		// if(!"reflection.MyObject".equals(name)) //i have no clue what this would be
 		// good for but it was in the original code so i'll leave it here for now.
 		// return super.loadClass(name);
+		//speaking of original code i have no clue where it came from. i should find that out.
 
 		// Prepare source somehow.
 		try {
