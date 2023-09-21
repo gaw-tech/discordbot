@@ -28,6 +28,9 @@ public class ConfigObj {
 		this.data = data;
 	}
 
+	/*
+	 * TODO
+	 */
 	public ArrayList<String> readStringArray() {
 		if (!type.equals(ConfigType.ARRAY_STRING)) {
 			throw new IllegalArgumentException(
@@ -53,6 +56,9 @@ public class ConfigObj {
 		return result;
 	}
 
+	/*
+	 * TODO
+	 */
 	public long[] readLongArray() {
 		if (!type.equals(ConfigType.ARRAY_LONG)) {
 			throw new IllegalArgumentException(
@@ -81,6 +87,9 @@ public class ConfigObj {
 		return Long.parseLong(data);
 	}
 
+	/*
+	 * Returns the config object as a string.
+	 */
 	@Override
 	public String toString() {
 		switch (type) {
@@ -99,7 +108,7 @@ public class ConfigObj {
 		case STRING:
 			return '"' + readString() + '"';
 		}
-		// TODO Auto-generated method stub
-		return super.toString();
+		// This return should never be called since every case for type is covered.
+		return "";
 	}
 }

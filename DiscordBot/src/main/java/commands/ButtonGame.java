@@ -29,11 +29,11 @@ import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.components.Button;
 import net.dv8tion.jda.api.interactions.components.ButtonStyle;
 
-public class NewButton implements Module {
+public class ButtonGame implements Module {
 	public static Emoji emoji = Emoji.fromEmote("sipspin", 831867874506178660L, true);
 	public static String button_message = "Press the button to claim the points.";
 	private String topname = "Button";
-	private HashMap<Long, ButtonGame> servers = new HashMap<>();
+	private HashMap<Long, ButtonGameInstance> servers = new HashMap<>();
 	Runnable run = new Runnable() {
 		@Override
 		public void run() {
@@ -50,10 +50,10 @@ public class NewButton implements Module {
 	};
 	ScheduledExecutorService exec = Executors.newScheduledThreadPool(1);
 
-	public NewButton() {
+	public ButtonGame() {
 		// TODO: load old stuff saved with reflection
 		for (Guild g : Bot.jda.getGuilds()) {
-			ButtonGame bg = new ButtonGame(g.getIdLong());
+			ButtonGameInstance bg = new ButtonGameInstance(g.getIdLong());
 			try {
 				bg.load();
 				servers.put(g.getIdLong(), bg);
@@ -263,9 +263,9 @@ public class NewButton implements Module {
 	 * for the server.
 	 */
 	private void call_button(MessageChannel channel, long server_id) {
-		ButtonGame bg;
+		ButtonGameInstance bg;
 		if (!servers.containsKey(server_id)) {
-			bg = new ButtonGame(server_id);
+			bg = new ButtonGameInstance(server_id);
 			servers.put(server_id, bg);
 		} else {
 			bg = servers.get(server_id);
@@ -280,7 +280,7 @@ public class NewButton implements Module {
 		if (!servers.containsKey(server_id)) {
 			return;
 		}
-		ButtonGame bg = servers.get(server_id);
+		ButtonGameInstance bg = servers.get(server_id);
 		bg.claim(user_id, ih);
 	}
 
@@ -288,14 +288,14 @@ public class NewButton implements Module {
 	 * method to print the top10 leaderboard
 	 */
 	private void print_top_10(MessageChannel channel, long server_id) {
-		ButtonGame bg = servers.get(server_id);
+		ButtonGameInstance bg = servers.get(server_id);
 		if (bg != null) {
 			bg.print_top_10(channel);
 		}
 	}
-	
+
 	private void print_top_10(InteractionHook ih, long server_id) {
-		ButtonGame bg = servers.get(server_id);
+		ButtonGameInstance bg = servers.get(server_id);
 		if (bg != null) {
 			bg.print_top_10(ih);
 		}
@@ -328,214 +328,216 @@ public class NewButton implements Module {
 		}
 		scanner.close();
 	}
-}
 
-class ButtonGame {
-	private int value = 0;
-	private Message message;
-	private long server_id;
-	private Button button;
-	private HashMap<Long, Integer> scores = new HashMap<>();
+	class ButtonGameInstance {
+		private int value = 0;
+		private Message message;
+		private long server_id;
+		private Button button;
+		private HashMap<Long, Integer> scores = new HashMap<>();
 
-	ButtonGame(long server_id) {
-		this.server_id = server_id;
-		button = Button.of(ButtonStyle.PRIMARY, "bgb" + server_id, "" + value, NewButton.emoji);
-	}
-
-	void call_button(MessageChannel channel) {
-		Message new_message = channel.sendMessage(NewButton.button_message).setActionRow(button).complete();
-		if (new_message != null) {
-			if (message != null) {
-				message.delete().queue();
-			}
-			message = new_message;
-			try {
-				save();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+		ButtonGameInstance(long server_id) {
+			this.server_id = server_id;
+			button = Button.of(ButtonStyle.PRIMARY, "bgb" + server_id, "" + value, ButtonGame.emoji);
 		}
-	}
 
-	protected void claim(long user_id, InteractionHook ih) {
-		if (scores.containsKey(user_id)) {
-			int score = scores.get(user_id);
-			if (score >= value) {
-				ih.editOriginal(
-						"The score of the button needs to be greater than yours, you can't claim it now. Try it in "
-								+ (score - value) + " minutes.")
-						.queue();
-				return;
-			}
-		}
-		scores.put(user_id, value);
-		ih.editOriginal("You claimed the button!").queue();
-		// TODO: add new rank to the claim message
-		message.getChannel().sendMessage("<@" + user_id + "> has claimed `" + value + "` points.").queue();
-		value = 0;
-		button = Button.of(ButtonStyle.PRIMARY, "bgb" + server_id, "" + value, NewButton.emoji);
-		call_button(message.getChannel());
-	}
-
-	public void increment() {
-		value++;
-		button = Button.of(ButtonStyle.PRIMARY, "bgb" + server_id, "" + value, NewButton.emoji);
-		if (message != null) {
-			try {
-				message.editMessage(NewButton.button_message).setActionRow(button).queue();
-			} catch (ErrorResponseException e) {
-				// TODO: some appropriate error message
-			}
-		}
-	}
-
-	protected void load() throws IOException {
-		File file = new File(server_id + ".scores");
-		if (!file.exists()) {
-			return;
-		}
-		Scanner scanner = new Scanner(file);
-		String[] first_line = scanner.nextLine().split(" ");
-		try {
-			Message message = Bot.jda.getTextChannelById(Long.parseLong(first_line[1]))
-					.retrieveMessageById(Long.parseLong(first_line[0])).complete();
-			this.message = message;
-		} catch (Exception | Error e) {
-			e.printStackTrace();
-		}
-		while (scanner.hasNext()) {
-			String[] line = scanner.nextLine().split(" ");
-			long user_id = Long.parseLong(line[0]);
-			int user_score = Integer.parseInt(line[1]);
-			scores.put(user_id, user_score);
-		}
-		scanner.close();
-	}
-
-	protected void save() throws IOException {
-		File file = new File(server_id + ".scores");
-		if (!file.exists()) {
-			file.createNewFile();
-		}
-		FileWriter fr = new FileWriter(file, false);
-		fr.append(message.getId() + " " + message.getChannel().getId() + "\n");
-		for (Long user_id : scores.keySet()) {
-			fr.append(user_id + " " + scores.get(user_id) + "\n");
-		}
-		fr.close();
-	}
-
-	public int get_value() {
-		return value;
-	}
-
-	protected void set_value(int value) {
-		this.value = value;
-	}
-
-	protected void print_top_10(MessageChannel channel) {
-		long[] sorted_users = sorted_users();
-		EmbedBuilder eb = new EmbedBuilder();
-		eb.setTitle("ButtonBoard");
-		eb.setColor(1); // maybe change that to a fun color?
-		eb.setDescription(
-				"Top " + ((sorted_users.length < 10) ? sorted_users.length : 10) + " Players of the button game.\n");
-
-		String users = "";
-		String scores = "";
-		String rank = "";
-
-		for (int i = 0; i < 10 && i < sorted_users.length; i++) {
-			users = users + "<@" + sorted_users[i] + ">:\n";
-			scores = scores + this.scores.get(sorted_users[i]) + "\n";
-			rank = rank + "**" + (i + 1) + ".**\n";
-		}
-		eb.addField("", "**Rank:**\n" + rank, true);
-		eb.addField("", "**Player:** \n" + users, true);
-		eb.addField("", "**Score:** \n" + scores, true);
-		eb.setFooter("", Bot.jda.getSelfUser().getAvatarUrl());
-		channel.sendMessageEmbeds(eb.build()).queue();
-	}
-	
-	protected void print_top_10(InteractionHook ih) {
-		long[] sorted_users = sorted_users();
-		EmbedBuilder eb = new EmbedBuilder();
-		eb.setTitle("ButtonBoard");
-		eb.setColor(1); // maybe change that to a fun color?
-		eb.setDescription(
-				"Top " + ((sorted_users.length < 10) ? sorted_users.length : 10) + " Players of the button game.\n");
-
-		String users = "";
-		String scores = "";
-		String rank = "";
-
-		for (int i = 0; i < 10 && i < sorted_users.length; i++) {
-			users = users + "<@" + sorted_users[i] + ">:\n";
-			scores = scores + this.scores.get(sorted_users[i]) + "\n";
-			rank = rank + "**" + (i + 1) + ".**\n";
-		}
-		eb.addField("", "**Rank:**\n" + rank, true);
-		eb.addField("", "**Player:** \n" + users, true);
-		eb.addField("", "**Score:** \n" + scores, true);
-		eb.setFooter("", Bot.jda.getSelfUser().getAvatarUrl());
-		ih.editOriginalEmbeds(eb.build()).queue();
-	}
-
-	protected long[] sorted_users() {
-		long[] sorted_users = new long[scores.size()];
-		int[] sorted_scores = new int[scores.size()];
-		int i = 0;
-		for (Entry<Long, Integer> e : scores.entrySet()) {
-			sorted_users[i] = e.getKey();
-			sorted_scores[i] = e.getValue();
-			i++;
-		}
-		// TODO: definitely could be improved
-		for (int j = 0; j < sorted_scores.length; j++) {
-			for (i = 0; i < sorted_scores.length - 1; i++) {
-				if (sorted_scores[i] < sorted_scores[i + 1]) {
-					int tmp_s = sorted_scores[i + 1];
-					long tmp_u = sorted_users[i + 1];
-					sorted_scores[i + 1] = sorted_scores[i];
-					sorted_users[i + 1] = sorted_users[i];
-					sorted_scores[i] = tmp_s;
-					sorted_users[i] = tmp_u;
+		void call_button(MessageChannel channel) {
+			Message new_message = channel.sendMessage(ButtonGame.button_message).setActionRow(button).complete();
+			if (new_message != null) {
+				if (message != null) {
+					message.delete().queue();
+				}
+				message = new_message;
+				try {
+					save();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 			}
 		}
-		return sorted_users;
-	}
 
-	protected void print_user_score(long user_id, MessageChannel channel) {
-		long[] sorted_users = sorted_users();
-		int rank = 0;
-		EmbedBuilder eb = new EmbedBuilder();
-		for (; rank < sorted_users.length; rank++) {
-			if (sorted_users[rank] == user_id) {
-				rank++;
-				eb.appendDescription("<@" + user_id + "> has `" + scores.get(user_id) + "` points and is nr. " + rank);
-				channel.sendMessageEmbeds(eb.build()).queue();
-				return;
+		protected void claim(long user_id, InteractionHook ih) {
+			if (scores.containsKey(user_id)) {
+				int score = scores.get(user_id);
+				if (score >= value) {
+					ih.editOriginal(
+							"The score of the button needs to be greater than yours, you can't claim it now. Try it in "
+									+ (score - value) + " minutes.")
+							.queue();
+					return;
+				}
+			}
+			scores.put(user_id, value);
+			ih.editOriginal("You claimed the button!").queue();
+			// TODO: add new rank to the claim message
+			message.getChannel().sendMessage("<@" + user_id + "> has claimed `" + value + "` points.").queue();
+			value = 0;
+			button = Button.of(ButtonStyle.PRIMARY, "bgb" + server_id, "" + value, ButtonGame.emoji);
+			call_button(message.getChannel());
+		}
+
+		public void increment() {
+			value++;
+			button = Button.of(ButtonStyle.PRIMARY, "bgb" + server_id, "" + value, ButtonGame.emoji);
+			if (message != null) {
+				try {
+					message.editMessage(ButtonGame.button_message).setActionRow(button).queue();
+				} catch (ErrorResponseException e) {
+					// TODO: some appropriate error message
+				}
 			}
 		}
-		eb.appendDescription("Found no score for the id: " + user_id);
-		channel.sendMessageEmbeds(eb.build()).queue();
-	}
-	
-	protected void print_user_score(long user_id, InteractionHook ih) {
-		long[] sorted_users = sorted_users();
-		int rank = 0;
-		EmbedBuilder eb = new EmbedBuilder();
-		for (; rank < sorted_users.length; rank++) {
-			if (sorted_users[rank] == user_id) {
-				rank++;
-				eb.appendDescription("<@" + user_id + "> has `" + scores.get(user_id) + "` points and is nr. " + rank);
-				ih.editOriginalEmbeds(eb.build()).queue();
+
+		protected void load() throws IOException {
+			File file = new File(server_id + ".scores");
+			if (!file.exists()) {
 				return;
 			}
+			Scanner scanner = new Scanner(file);
+			String[] first_line = scanner.nextLine().split(" ");
+			try {
+				Message message = Bot.jda.getTextChannelById(Long.parseLong(first_line[1]))
+						.retrieveMessageById(Long.parseLong(first_line[0])).complete();
+				this.message = message;
+			} catch (Exception | Error e) {
+				e.printStackTrace();
+			}
+			while (scanner.hasNext()) {
+				String[] line = scanner.nextLine().split(" ");
+				long user_id = Long.parseLong(line[0]);
+				int user_score = Integer.parseInt(line[1]);
+				scores.put(user_id, user_score);
+			}
+			scanner.close();
 		}
-		eb.appendDescription("Found no score for the id: " + user_id);
-		ih.editOriginalEmbeds(eb.build()).queue();
+
+		protected void save() throws IOException {
+			File file = new File(server_id + ".scores");
+			if (!file.exists()) {
+				file.createNewFile();
+			}
+			FileWriter fr = new FileWriter(file, false);
+			fr.append(message.getId() + " " + message.getChannel().getId() + "\n");
+			for (Long user_id : scores.keySet()) {
+				fr.append(user_id + " " + scores.get(user_id) + "\n");
+			}
+			fr.close();
+		}
+
+		public int get_value() {
+			return value;
+		}
+
+		protected void set_value(int value) {
+			this.value = value;
+		}
+
+		protected void print_top_10(MessageChannel channel) {
+			long[] sorted_users = sorted_users();
+			EmbedBuilder eb = new EmbedBuilder();
+			eb.setTitle("ButtonBoard");
+			eb.setColor(1); // maybe change that to a fun color?
+			eb.setDescription("Top " + ((sorted_users.length < 10) ? sorted_users.length : 10)
+					+ " Players of the button game.\n");
+
+			String users = "";
+			String scores = "";
+			String rank = "";
+
+			for (int i = 0; i < 10 && i < sorted_users.length; i++) {
+				users = users + "<@" + sorted_users[i] + ">:\n";
+				scores = scores + this.scores.get(sorted_users[i]) + "\n";
+				rank = rank + "**" + (i + 1) + ".**\n";
+			}
+			eb.addField("", "**Rank:**\n" + rank, true);
+			eb.addField("", "**Player:** \n" + users, true);
+			eb.addField("", "**Score:** \n" + scores, true);
+			eb.setFooter("", Bot.jda.getSelfUser().getAvatarUrl());
+			channel.sendMessageEmbeds(eb.build()).queue();
+		}
+
+		protected void print_top_10(InteractionHook ih) {
+			long[] sorted_users = sorted_users();
+			EmbedBuilder eb = new EmbedBuilder();
+			eb.setTitle("ButtonBoard");
+			eb.setColor(1); // maybe change that to a fun color?
+			eb.setDescription("Top " + ((sorted_users.length < 10) ? sorted_users.length : 10)
+					+ " Players of the button game.\n");
+
+			String users = "";
+			String scores = "";
+			String rank = "";
+
+			for (int i = 0; i < 10 && i < sorted_users.length; i++) {
+				users = users + "<@" + sorted_users[i] + ">:\n";
+				scores = scores + this.scores.get(sorted_users[i]) + "\n";
+				rank = rank + "**" + (i + 1) + ".**\n";
+			}
+			eb.addField("", "**Rank:**\n" + rank, true);
+			eb.addField("", "**Player:** \n" + users, true);
+			eb.addField("", "**Score:** \n" + scores, true);
+			eb.setFooter("", Bot.jda.getSelfUser().getAvatarUrl());
+			ih.editOriginalEmbeds(eb.build()).queue();
+		}
+
+		protected long[] sorted_users() {
+			long[] sorted_users = new long[scores.size()];
+			int[] sorted_scores = new int[scores.size()];
+			int i = 0;
+			for (Entry<Long, Integer> e : scores.entrySet()) {
+				sorted_users[i] = e.getKey();
+				sorted_scores[i] = e.getValue();
+				i++;
+			}
+			// TODO: definitely could be improved
+			for (int j = 0; j < sorted_scores.length; j++) {
+				for (i = 0; i < sorted_scores.length - 1; i++) {
+					if (sorted_scores[i] < sorted_scores[i + 1]) {
+						int tmp_s = sorted_scores[i + 1];
+						long tmp_u = sorted_users[i + 1];
+						sorted_scores[i + 1] = sorted_scores[i];
+						sorted_users[i + 1] = sorted_users[i];
+						sorted_scores[i] = tmp_s;
+						sorted_users[i] = tmp_u;
+					}
+				}
+			}
+			return sorted_users;
+		}
+
+		protected void print_user_score(long user_id, MessageChannel channel) {
+			long[] sorted_users = sorted_users();
+			int rank = 0;
+			EmbedBuilder eb = new EmbedBuilder();
+			for (; rank < sorted_users.length; rank++) {
+				if (sorted_users[rank] == user_id) {
+					rank++;
+					eb.appendDescription(
+							"<@" + user_id + "> has `" + scores.get(user_id) + "` points and is nr. " + rank);
+					channel.sendMessageEmbeds(eb.build()).queue();
+					return;
+				}
+			}
+			eb.appendDescription("Found no score for the id: " + user_id);
+			channel.sendMessageEmbeds(eb.build()).queue();
+		}
+
+		protected void print_user_score(long user_id, InteractionHook ih) {
+			long[] sorted_users = sorted_users();
+			int rank = 0;
+			EmbedBuilder eb = new EmbedBuilder();
+			for (; rank < sorted_users.length; rank++) {
+				if (sorted_users[rank] == user_id) {
+					rank++;
+					eb.appendDescription(
+							"<@" + user_id + "> has `" + scores.get(user_id) + "` points and is nr. " + rank);
+					ih.editOriginalEmbeds(eb.build()).queue();
+					return;
+				}
+			}
+			eb.appendDescription("Found no score for the id: " + user_id);
+			ih.editOriginalEmbeds(eb.build()).queue();
+		}
 	}
 }

@@ -25,18 +25,20 @@ public class Bot {
 	public static String path;
 
 	public static void main(String[] args) {
-		// get path of the jar
+		// get path of the jar, this is where the config file should be
 		try {
 			path = URLDecoder.decode(Bot.class.getProtectionDomain().getCodeSource().getLocation().getPath(), "UTF-8");
 			path = path.substring(0, path.lastIndexOf('/'));
-		} catch (UnsupportedEncodingException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			System.err.println("This error should never happen. It still did. That's odd.");
+			e.printStackTrace();
 		}
 
+		// read the config to set up the bot properly
 		try {
 			Config.load();
 		} catch (FileNotFoundException e) {
+			// Since no config file was found the user is guided through a simple setup.
 			System.out.println("Config file could not be loaded. File not found in " + path + "/config.txt");
 			File file = Config.newFileRoutine();
 			if (file != null) {
@@ -58,12 +60,15 @@ public class Bot {
 					System.out.println("Couldn't save generated config.");
 					e1.printStackTrace();
 				}
+				scanner.close();
 			} else {
-				System.out.println("I don't know what to do now.");
+				System.out.println("I don't know what to do now. Bye!");
 				e.printStackTrace();
 				return;
 			}
 		}
+		
+		// set up the bots main listener
 		MainListener commands;
 		try {
 			token = Config.get("token").readString();
@@ -92,11 +97,11 @@ public class Bot {
 					MainListener.load(module);
 				}
 			} finally {
-
+				System.out.println("All modules loaded. Bot ready!");
 			}
 
 		} catch (LoginException e) {
-			System.out.println("what the hek?");
+			System.out.println("Was not able to login! Maybe the token is bad?");
 			e.printStackTrace();
 		}
 

@@ -13,6 +13,11 @@ public class Config {
 	static HashMap<String, ConfigObj> configs = new HashMap<>();
 	static String path = "config.txt";
 
+	/*
+	 * Tries to open the config.txt file which should be in the same folder as the main executable of the bot.
+	 * Then fills in the configs map.
+	 * Throws a FileNotFoundException if it can't find the config.txt file.
+	 */
 	public static void load() throws FileNotFoundException {
 		path = Bot.path + "/config.txt";
 		File file = new File(path);
@@ -43,6 +48,10 @@ public class Config {
 		}
 	}
 
+	/*
+	 * Saves the configs to config.txt.
+	 * Throws IOException.
+	 */
 	public static void save() throws IOException {
 		File file = new File(path);
 		FileWriter fr = new FileWriter(file);
@@ -50,7 +59,10 @@ public class Config {
 		fr.close();
 	}
 
-	public static String getAsString() {
+	/*
+	 * Turns the config into a string. Internally used to save the config.
+	 */
+	private static String getAsString() {
 		String result = "";
 		for (String name : configs.keySet()) {
 			result += name + ":" + configs.get(name).toString() + "\n";
@@ -58,32 +70,27 @@ public class Config {
 		return result;
 	}
 
-	public static void main(String[] args) {
-		try {
-			load();
-		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		System.out.println(Config.getAsString());
-		try {
-			save();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
+	/*
+	 * Returns the config with the given name.
+	 * Returns null if the config with the given name does not exist.
+	 */
 	public static ConfigObj get(String name) {
 		if (!configs.containsKey(name))
 			throw new NullPointerException("Could not find config \"" + name + "\" in " + path);
 		return configs.get(name);
 	}
 
+	/*
+	 * TODO
+	 */
 	public static void setLine(ConfigType type, String name, String data) {
 		configs.put(name, new ConfigObj(type, data));
 	}
 
+	/* 
+	 * Starts a short dialog asking if a new config file should be created.
+	 * Returns the config file if it was created else it returns null.
+	 */
 	public static File newFileRoutine() {
 		Scanner scanner = new Scanner(System.in);
 		boolean validAnswer = false;
@@ -105,7 +112,7 @@ public class Config {
 			file = new File(path);
 			System.out.println("Created a new file in " + file.getAbsolutePath() + ".");
 		}
-		// scanner.close();
+		scanner.close();
 		return file;
 	}
 }
