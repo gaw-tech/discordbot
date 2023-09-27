@@ -18,6 +18,9 @@ import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
 public class Bot {
+	/*
+	 * TODO: Add the prefix to the config.
+	 */
 	public static String prefix = "?";
 	public static String myID;
 	public static JDA jda;
@@ -45,8 +48,10 @@ public class Bot {
 				System.out.println("Botowner id:");
 				Scanner scanner = new Scanner(System.in);
 				while (!scanner.hasNextLong()) {
-					System.out.println("id must be a long");
-					scanner.nextLine();
+					if (scanner.hasNext()) {
+						System.out.println("id must be a long");
+						scanner.nextLine();
+					}
 				}
 				String id = scanner.nextLong() + "";
 				Config.setLine(ConfigType.STRING, "myID", '"' + id + '"');
@@ -54,6 +59,7 @@ public class Bot {
 				String token = scanner.next();
 				Config.setLine(ConfigType.STRING, "token", '"' + token + '"');
 				Config.setLine(ConfigType.ARRAY_STRING, "slash_channels", "{}");
+				Config.setLine(ConfigType.ARRAY_STRING, "modules", "{}");
 				try {
 					Config.save();
 				} catch (IOException e1) {
@@ -67,7 +73,7 @@ public class Bot {
 				return;
 			}
 		}
-		
+
 		// set up the bots main listener
 		MainListener commands;
 		try {
@@ -94,7 +100,11 @@ public class Bot {
 			try {
 				ArrayList<String> modules = Config.get("modules").readStringArray();
 				for (String module : modules) {
-					MainListener.load(module);
+					if (MainListener.load(module) == 1) {
+						System.out.println("Loaded: " + module);
+					} else {
+						System.out.println("Something went wrong loading: " + module);
+					}
 				}
 			} finally {
 				System.out.println("All modules loaded. Bot ready!");
