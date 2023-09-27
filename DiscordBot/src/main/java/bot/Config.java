@@ -7,8 +7,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Scanner;
 
-import kotlin.reflect.jvm.internal.impl.types.checker.NewCapturedType;
-
 public class Config {
 	static HashMap<String, ConfigObj> configs = new HashMap<>();
 	static String path = "config.txt";
@@ -22,6 +20,8 @@ public class Config {
 		path = Bot.path + "/config.txt";
 		File file = new File(path);
 		System.out.println("confix.txt @ " + file.getAbsolutePath());
+		// probably a bad idea
+		@SuppressWarnings("resource")
 		Scanner scanner = new Scanner(file);
 		while (scanner.hasNext()) {
 			String line = scanner.nextLine();
@@ -92,6 +92,8 @@ public class Config {
 	 * Returns the config file if it was created else it returns null.
 	 */
 	public static File newFileRoutine() {
+		// we leave the scanner open so we still use it later
+		@SuppressWarnings("resource")
 		Scanner scanner = new Scanner(System.in);
 		boolean validAnswer = false;
 		boolean createNewFile = false;
@@ -112,7 +114,6 @@ public class Config {
 			file = new File(path);
 			System.out.println("Created a new file in " + file.getAbsolutePath() + ".");
 		}
-		scanner.close();
 		return file;
 	}
 }

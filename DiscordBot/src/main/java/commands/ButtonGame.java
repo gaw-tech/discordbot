@@ -186,17 +186,7 @@ public class ButtonGame implements Module {
 	}
 
 	@Override
-	public boolean has_slash() {
-		return true;
-	}
-
-	@Override
 	public boolean has_button() {
-		return true;
-	}
-
-	@Override
-	public boolean has_basic_help() {
 		return true;
 	}
 

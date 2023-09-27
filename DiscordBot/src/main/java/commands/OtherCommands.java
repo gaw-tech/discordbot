@@ -26,7 +26,6 @@ import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
-import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 
 public class OtherCommands implements Module {
@@ -34,7 +33,6 @@ public class OtherCommands implements Module {
 	String topname = "Other";
 	String out = "";
 	LinkedList<String> yoinked = new LinkedList<>();
-	LinkedList<String> cleanlist = new LinkedList<>();
 
 	@Override
 	public void run_message(MessageReceivedEvent event) {
@@ -149,16 +147,6 @@ public class OtherCommands implements Module {
 			if (content.startsWith(prefix + "yoink ")) {
 				message.delete().queue();
 				yoinked.add(content.split(" ")[1]);
-			}
-			// cleanlist handeling
-			if (content.startsWith(prefix + "cleanlist add ")) {
-				content = content.substring(prefix.length() + 14).toLowerCase();
-				cleanlist.add(content);
-				channel.sendMessage("Added `" + content + "` to the list.").queue();
-			}
-			// cleanlist cleaner
-			if (cleanlist.contains(content.toLowerCase())) {
-				message.delete().queue();
 			}
 			// get a module to display
 			if (content.startsWith(prefix + "getmodule ")) {
@@ -293,13 +281,13 @@ public class OtherCommands implements Module {
 	public void run_reaction(MessageReactionAddEvent event) {
 		Message msg = null;
 		if (yoinked.contains(event.getUser().getId())) {
-			msg = event.getChannel().retrieveMessageById(event.getMessageId()).complete();
+			msg = event.retrieveMessage().complete();
 		}
 		if (msg == null)
 			return;
 		if (msg.getAuthor().getId().equals(event.getJDA().getSelfUser().getId())
-				|| msg.getAuthor().getId().equals(myID) && event.getReactionEmote().getName().contains("cavebob")) {
-			msg.removeReaction(event.getReaction().getReactionEmote().getEmote(), event.getUser()).queue();
+				|| msg.getAuthor().getId().equals(myID)) {
+			msg.removeReaction(event.getReactionEmote().getEmote(), event.retrieveUser().complete()).queue();
 		}
 	}
 
@@ -314,7 +302,6 @@ public class OtherCommands implements Module {
 		topname = null;
 		out = null;
 		yoinked = null;
-		cleanlist = null;
 	}
 
 	@Override
@@ -322,20 +309,18 @@ public class OtherCommands implements Module {
 		EmbedBuilder eb = new EmbedBuilder();
 		eb.setTitle("Help Other");
 		eb.addField("Description:", "Just some random commands!", true);
-		eb.addField("Usage:", "`" + prefix + "ping` returns pong!\n`" + prefix
-				+ "source` view the repo with the source code of <@778731540359675904>. ", true);
+		eb.addField(
+				"Usage:", "`" + prefix + "ping` returns pong!\n`" + prefix
+						+ "source` view the repo with the source code of <@" + Bot.jda.getSelfUser().getId() + ">. ",
+				true);
 		return eb;
-	}
-
-	@Override
-	public boolean has_basic_help() {
-		return true;
 	}
 
 	@Override
 	public Field get_basic_help() {
 		return new Field(topname, "`" + prefix + "ping` pong!\n`" + prefix
-				+ "source` view the repo with the source code of <@778731540359675904>. ", true, true);
+				+ "source` view the repo with the source code of <@" + Bot.jda.getSelfUser().getId() + ">. ", true,
+				true);
 	}
 
 	@Override
@@ -373,11 +358,6 @@ public class OtherCommands implements Module {
 	@Override
 	public HashMap<String, String> get_slash() {
 		return null;
-	}
-
-	@Override
-	public boolean has_slash() {
-		return false;
 	}
 
 	@Override

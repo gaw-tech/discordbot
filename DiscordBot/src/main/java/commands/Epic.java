@@ -116,11 +116,6 @@ public class Epic extends ListenerAdapter implements Module {
 	}
 
 	@Override
-	public boolean has_basic_help() {
-		return true;
-	}
-
-	@Override
 	public String get_topname() {
 		return topname;
 	}
@@ -190,11 +185,6 @@ public class Epic extends ListenerAdapter implements Module {
 		HashMap<String, String> slash_commands = new HashMap<>();
 		slash_commands.put("epic", "Get an image from the NASA EPIC.");
 		return slash_commands;
-	}
-
-	@Override
-	public boolean has_slash() {
-		return true;
 	}
 
 	@Override

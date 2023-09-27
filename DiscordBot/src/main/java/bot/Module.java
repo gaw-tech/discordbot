@@ -10,6 +10,10 @@ import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 
+
+/*
+ *  Module interface. Add functionality by creating a class which implements this interface. Allows classes to be loaded with MyClassLoader while the bot is running.
+ */
 public interface Module {
 	public String prefix = Bot.prefix;
 	
@@ -23,11 +27,7 @@ public interface Module {
 	
 	public boolean has_reaction();
 	
-	public boolean has_slash();
-	
 	public boolean has_button();
-
-	public boolean has_basic_help();
 
 	public EmbedBuilder get_help();
 

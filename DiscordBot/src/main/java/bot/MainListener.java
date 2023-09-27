@@ -10,7 +10,6 @@ import java.util.concurrent.TimeUnit;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
@@ -20,7 +19,13 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
+/*
+ * The main listener. Implements a few basic commands and distributes events as needed.
+ */
 public class MainListener extends ListenerAdapter {
+	/*
+	 * TODO: Change how slash commands are treated.
+	 */
 	String myId = Bot.myID;
 	String prefix = Bot.prefix;
 	private static HashMap<String, Module> loaded = new HashMap<>();
@@ -29,70 +34,49 @@ public class MainListener extends ListenerAdapter {
 	private static LinkedList<Module> reaction_modules = new LinkedList<>();
 	private static HashMap<String, Module> slash_command_modules = new HashMap<>();
 	private static LinkedList<Module> button_modules = new LinkedList<>();
-	// private static HashMap<String, String> slash_command_ids = new HashMap<>();
-	// guildid cmd cmdid used to delete commands if module is unloaded
-	private static HashMap<String, HashMap<String, String>> slash_command_ids_by_guilds = new HashMap<>();
-	private static HashMap<String, String> slash_command_ids_global = new HashMap<>(); // cmd cmdid
-	private static boolean slash_global = true; // choose if the slash commands are set up globally or guildwise
+	private static HashMap<String, String> slash_command_ids = new HashMap<>(); // cmd cmdid
 	static ArrayList<String> slash_channels;
 	static JDA jda;
 
 	MainListener(JDA jda) {
-		/*
-		 * try { jda.awaitReady(); } catch (InterruptedException e) { // TODO
-		 * Auto-generated catch block e.printStackTrace(); }
-		 */
 		MainListener.jda = jda;
-		/*
-		 * for (Guild g : jda.getGuilds()) { for (Command c :
-		 * g.retrieveCommands().complete()) { c.delete().queue(); } }
-		 */
 		slash_channels = Config.get("slash_channels").readStringArray();
 	}
 
+	/*
+	 * Loads the class with the name <modulename>. The class must implement the
+	 * interface Module. Returns 1 if the class was successfully loaded 0 if the
+	 * class already was loaded -1 if there was an error
+	 */
 	public static int load(String modulename) {
 		try {
 			if (loaded.containsKey(modulename)) {
 				return 0;
 			}
-			ClassLoader parentClassLoader = MyClassLoader.class.getClassLoader();
-			MyClassLoader classLoader = new MyClassLoader(parentClassLoader);
+			MyClassLoader classLoader = new MyClassLoader();
 			Module instance = (Module) classLoader.loadClass(modulename).getConstructor().newInstance();
-			if (instance.has_basic_help()) {
-				basic_help_fields.add(instance.get_basic_help());
-			}
 			if (instance.has_reaction()) {
 				reaction_modules.add(instance);
-			}
-			if (instance.has_slash()) {
-				if (slash_global) {// global slash command setup
-					for (String cmd : instance.get_slash().keySet()) {
-						slash_command_modules.put(cmd, instance);
-						jda.upsertCommand(cmd, instance.get_slash().get(cmd)).queue(command -> {
-							slash_command_ids_global.put(cmd, command.getId());
-						});
-					}
-				} else { // guildwise slash command setup
-					for (String cmd : instance.get_slash().keySet()) {
-						slash_command_modules.put(cmd, instance);
-						for (Guild g : jda.getGuilds()) {
-							HashMap<String, String> command_id = (!slash_command_ids_by_guilds.containsKey(g.getId()))
-									? new HashMap<>()
-									: (slash_command_ids_by_guilds.get(g.getId()) == null) ? new HashMap<>()
-											: slash_command_ids_by_guilds.get(g.getId());
-							g.upsertCommand(cmd, instance.get_slash().get(cmd)).queue(command -> {
-								command_id.put(cmd, command.getId());
-							});
-
-						}
-					}
-				}
 			}
 			if (instance.has_button()) {
 				button_modules.add(instance);
 			}
-			for (String cmd : instance.get_short_commands()) {
-				short_commands.put(cmd, instance);
+			if (instance.get_basic_help() != null) {
+				basic_help_fields.add(instance.get_basic_help());
+			}
+			if (instance.get_slash() != null) {
+				for (String cmd : instance.get_slash().keySet()) {
+					slash_command_modules.put(cmd, instance);
+					jda.upsertCommand(cmd, instance.get_slash().get(cmd)).queue(command -> {
+						slash_command_ids.put(cmd, command.getId());
+					});
+
+				}
+			}
+			if (instance.get_short_commands() != null) {
+				for (String cmd : instance.get_short_commands()) {
+					short_commands.put(cmd, instance);
+				}
 			}
 			loaded.put(modulename, instance);
 			updateSavedModules();
@@ -104,7 +88,7 @@ public class MainListener extends ListenerAdapter {
 	}
 
 	/*
-	 * returns: -1 if there was an error while loading 0 if the module was not
+	 * Returns: -1 if there was an error while loading 0 if the module was not
 	 * loaded 1 if the unloading was succesful
 	 */
 	public static int unload(String modulename) {
@@ -113,30 +97,18 @@ public class MainListener extends ListenerAdapter {
 				return 0;
 			}
 			Module instance = loaded.get(modulename);
-			for (String cmd : instance.get_short_commands()) {
-				short_commands.remove(cmd);
-			}
-			if (instance.has_slash()) {
-				if (slash_global) {
-					for(String cmd: instance.get_slash().keySet()) {
-						jda.deleteCommandById(slash_command_ids_global.get(cmd)).queue();
-						slash_command_ids_global.remove(cmd);
-						slash_command_modules.remove(cmd);
-					}
-				} else {
-					for (Guild g : jda.getGuilds()) {
-						if (slash_command_ids_by_guilds.containsKey(g.getId())) {
-							HashMap<String, String> command_id = slash_command_ids_by_guilds.get(g.getId());
-							for (String cmd : instance.get_slash().keySet()) {
-								g.deleteCommandById(command_id.get(cmd)).queue();
-								command_id.remove(cmd);
-							}
-						}
-					}
-					for (String cmd : instance.get_slash().keySet()) {
-						slash_command_modules.remove(cmd);
-					}
+			if (instance.get_short_commands() != null) {
+				for (String cmd : instance.get_short_commands()) {
+					short_commands.remove(cmd);
 				}
+			}
+			if (instance.get_slash() != null) {
+				for (String cmd : instance.get_slash().keySet()) {
+					jda.deleteCommandById(slash_command_ids.get(cmd)).queue();
+					slash_command_ids.remove(cmd);
+					slash_command_modules.remove(cmd);
+				}
+
 			}
 			loaded.remove(modulename);
 			reload_basic_help_fields();
@@ -152,6 +124,9 @@ public class MainListener extends ListenerAdapter {
 
 	}
 
+	/*
+	 * Updates the modules line in the config and saves it to the config.txt file.
+	 */
 	private static void updateSavedModules() {
 		String data = "{";
 		for (String m : loaded.keySet()) {
@@ -166,26 +141,36 @@ public class MainListener extends ListenerAdapter {
 		}
 	}
 
+	/*
+	 * Makes sure that the list of modules implementing buttons matches the loaded
+	 * modules.
+	 */
 	private static void reload_button_modules() {
 		button_modules = new LinkedList<>();
-		for (String key : loaded.keySet()) {
-			Module module = loaded.get(key);
+		for (Module module : loaded.values()) {
 			if (module.has_button()) {
 				button_modules.add(module);
 			}
 		}
 	}
 
+	/*
+	 * Makes sure that the list of modules with basic help fields matches the loaded
+	 * modules.
+	 */
 	private static void reload_basic_help_fields() {
 		basic_help_fields = new LinkedList<>();
-		for (String key : loaded.keySet()) {
-			Module module = loaded.get(key);
-			if (module.has_basic_help()) {
+		for (Module module : loaded.values()) {
+			if (module.get_basic_help() != null) {
 				basic_help_fields.add(module.get_basic_help());
 			}
 		}
 	}
 
+	/*
+	 * Makes sure that the list of modules which need reaction events matches the
+	 * loaded modules.
+	 */
 	private static void reload_reaction_modules() {
 		reaction_modules = new LinkedList<>();
 		for (String key : loaded.keySet()) {
@@ -196,8 +181,15 @@ public class MainListener extends ListenerAdapter {
 		}
 	}
 
+	/*
+	 * The main message listener.
+	 */
 	@Override
 	public void onMessageReceived(MessageReceivedEvent event) {
+		// We do not want to interact with any bot.
+		if (event.getAuthor().isBot()) {
+			return;
+		}
 		Message message = event.getMessage();
 		String content = message.getContentRaw();
 		MessageChannel channel = message.getChannel();
@@ -253,7 +245,7 @@ public class MainListener extends ListenerAdapter {
 					channel.sendMessageEmbeds(eb.build()).queue();
 				}
 			}
-			// owner only
+			// Bot functionality that only is important for the bot owner.
 			if (!event.getAuthor().getId().equals(myId))
 				return;
 			// LOAD command
@@ -306,8 +298,8 @@ public class MainListener extends ListenerAdapter {
 				}
 			}
 
-			// YEET command
-			if (content.startsWith(prefix + "yeet ") || content.startsWith(prefix + "unload ")) {
+			// UNLOAD command
+			if (content.startsWith(prefix + "unload ")) {
 				String dataname = content.split(" ")[1];
 				switch (unload(dataname)) {
 				case -1: {
@@ -352,20 +344,19 @@ public class MainListener extends ListenerAdapter {
 		}
 	}
 
+	/*
+	 * Main reaction listener.
+	 */
 	@Override
 	public void onMessageReactionAdd(MessageReactionAddEvent event) {
-		if (event.getReactionEmote().getName().equals("addQuote")) {
-			System.out.println(event.getUser().getName() + " quoted "
-					+ event.getChannel().retrieveMessageById(event.getMessageId()).complete().getContentRaw()
-					+ " from: "
-					+ event.getChannel().retrieveMessageById(event.getMessageId()).complete().getAuthor().getName()
-					+ " in: " + event.getChannel().getName());
-		}
 		for (Module module : reaction_modules) {
 			module.run_reaction(event);
 		}
 	}
 
+	/*
+	 * Main slash command listener.
+	 */
 	@Override
 	public void onSlashCommand(SlashCommandEvent event) {
 		if (slash_channels.contains(event.getChannel().getId())) {
@@ -375,6 +366,9 @@ public class MainListener extends ListenerAdapter {
 		}
 	}
 
+	/*
+	 * Main button press listener.
+	 */
 	@Override
 	public void onButtonClick(ButtonClickEvent event) {
 		for (Module module : button_modules) {

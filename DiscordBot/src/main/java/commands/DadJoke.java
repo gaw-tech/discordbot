@@ -75,11 +75,6 @@ public class DadJoke extends ListenerAdapter implements Module {
 	}
 
 	@Override
-	public boolean has_basic_help() {
-		return false;
-	}
-
-	@Override
 	public String get_topname() {
 		return topname;
 	}
@@ -138,11 +133,6 @@ public class DadJoke extends ListenerAdapter implements Module {
 		HashMap<String, String> slash_commands = new HashMap<>();
 		slash_commands.put("dadjoke", "A random dad joke.");
 		return slash_commands;
-	}
-
-	@Override
-	public boolean has_slash() {
-		return true;
 	}
 
 	@Override
