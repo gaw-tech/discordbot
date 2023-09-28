@@ -29,7 +29,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 public class Apod extends ListenerAdapter implements Module {
 	String topname = "APOD";
-	String nasaapikey = Config.get("nasaapikey").readString(); //we assume that confic is loaded here which might not be to smart
+	String nasaapikey = Config.get("nasaapikey").readString(); //we assume that confic is loaded here which might not be to smart and that the config contains the nasaapikey
 
 	@Override
 	public void run_message(MessageReceivedEvent event) {
